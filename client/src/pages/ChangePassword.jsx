@@ -15,7 +15,7 @@ export const ChangePassword = () => {
     const { changePassword } = useAuth();
     const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setSuccess(false);
@@ -30,13 +30,13 @@ export const ChangePassword = () => {
             return;
         }
 
-        const result = changePassword(oldPassword, newPassword);
+        const result = await changePassword(oldPassword, newPassword);
 
         if (result.success) {
             setSuccess(true);
             setTimeout(() => navigate(-1), 2000);
         } else {
-            setError('Ancien mot de passe incorrect');
+            setError(result.message || 'Ancien mot de passe incorrect');
         }
     };
 

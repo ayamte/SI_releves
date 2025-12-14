@@ -8,6 +8,7 @@ import { ChangePassword } from './pages/ChangePassword';
 import { Dashboard } from './pages/Dashboard';
 import { RelevesList } from './pages/RelevesList';
 import { ReleveDetail } from './pages/ReleveDetail';
+import { ReleveAdd } from './pages/ReleveAdd';
 import { AgentsList } from './pages/AgentsList';
 import { AgentDetail } from './pages/AgentDetail';
 import { CompteursList } from './pages/CompteursList';
@@ -27,7 +28,7 @@ const HomeRedirect = () => {
 
 function App() {
     return (
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <AuthProvider>
                 <Routes>
                     {/* Public Route */}
@@ -135,10 +136,62 @@ function App() {
                         }
                     />
                     <Route
-                        path="/admin/users/nouveau"
+                        path="/admin/users/add"
                         element={
                             <ProtectedRoute allowedRoles={['SUPERADMIN']}>
                                 <UserAdd />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    {/* Compteurs Routes */}
+                    <Route
+                        path="/admin/compteurs"
+                        element={
+                            <ProtectedRoute allowedRoles={['SUPERADMIN']}>
+                                <CompteursList />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/admin/compteurs/:id"
+                        element={
+                            <ProtectedRoute allowedRoles={['SUPERADMIN']}>
+                                <CompteurDetail />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/admin/compteurs/add"
+                        element={
+                            <ProtectedRoute allowedRoles={['SUPERADMIN']}>
+                                <CompteurAdd />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    {/* Relevés Routes */}
+                    <Route
+                        path="/admin/releves"
+                        element={
+                            <ProtectedRoute allowedRoles={['SUPERADMIN']}>
+                                <RelevesList />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/admin/releves/:id"
+                        element={
+                            <ProtectedRoute allowedRoles={['SUPERADMIN']}>
+                                <ReleveDetail />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/admin/releves/add"
+                        element={
+                            <ProtectedRoute allowedRoles={['SUPERADMIN']}>
+                                <ReleveAdd />
                             </ProtectedRoute>
                         }
                     />

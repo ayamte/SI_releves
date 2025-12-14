@@ -1,0 +1,12 @@
+{
+  "name": "si-releves-root",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "create-users": "node create_users.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "mysql2": "^3.6.5"
+  }
+}

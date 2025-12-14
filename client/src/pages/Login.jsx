@@ -10,11 +10,11 @@ export const Login = () => {
     const { login } = useAuth();
     const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
 
-        const result = login(email, password);
+        const result = await login(email, password);
 
         if (result.success) {
             // Redirect based on role
@@ -91,15 +91,6 @@ export const Login = () => {
                             Se connecter
                         </button>
                     </form>
-
-                    {/* Demo Credentials */}
-                    <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                        <p className="text-xs font-semibold text-gray-700 mb-2">Comptes de test :</p>
-                        <div className="text-xs text-gray-600 space-y-1">
-                            <p><span className="font-medium">Admin:</span> admin@ree.ma / Admin123</p>
-                            <p><span className="font-medium">User:</span> user@ree.ma / User123</p>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

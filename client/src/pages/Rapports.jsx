@@ -1,11 +1,39 @@
+import { useState } from 'react';
 import { MainLayout } from '../components/Layout/MainLayout';
 import { Card } from '../components/UI/Card';
 import { Button } from '../components/UI/Button';
 import { FileText, Download } from 'lucide-react';
+import { generateRapportMensuel } from '../utils/rapports/rapportMensuel';
+import { generateRapportConsommation } from '../utils/rapports/rapportConsommation';
+import { releves, compteurs, agents, quartiers, adresses } from '../data/mockData';
 
 export const Rapports = () => {
-    const handleExportPDF = (reportType) => {
-        alert(`Export PDF du rapport: ${reportType}\n(Fonctionnalité à implémenter avec jsPDF ou react-pdf)`);
+    const [loading, setLoading] = useState(false);
+
+    const handleExportRapportMensuel = async () => {
+        try {
+            setLoading(true);
+            const filename = generateRapportMensuel(releves, agents, compteurs, quartiers, adresses);
+            alert(`✅ Rapport généré avec succès!\n\nFichier: ${filename}`);
+        } catch (error) {
+            console.error('Erreur génération PDF:', error);
+            alert('❌ Erreur lors de la génération du rapport.\nVérifiez la console pour plus de détails.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleExportRapportConsommation = async () => {
+        try {
+            setLoading(true);
+            const filename = await generateRapportConsommation(releves, compteurs);
+            alert(`✅ Rapport généré avec succès!\n\nFichier: ${filename}`);
+        } catch (error) {
+            console.error('Erreur génération PDF:', error);
+            alert('❌ Erreur lors de la génération du rapport.\nVérifiez la console pour plus de détails.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -49,10 +77,11 @@ export const Rapports = () => {
                             <Button
                                 variant="primary"
                                 className="w-full"
-                                onClick={() => handleExportPDF('Rapport Mensuel des Relevés')}
+                                onClick={handleExportRapportMensuel}
+                                disabled={loading}
                             >
                                 <Download size={18} className="mr-2" />
-                                Exporter en PDF
+                                {loading ? 'Génération...' : 'Exporter en PDF'}
                             </Button>
                         </div>
                     </Card>
@@ -86,10 +115,11 @@ export const Rapports = () => {
                             <Button
                                 variant="secondary"
                                 className="w-full"
-                                onClick={() => handleExportPDF('Évolution de la Consommation')}
+                                onClick={handleExportRapportConsommation}
+                                disabled={loading}
                             >
                                 <Download size={18} className="mr-2" />
-                                Exporter en PDF
+                                {loading ? 'Génération...' : 'Exporter en PDF'}
                             </Button>
                         </div>
                     </Card>

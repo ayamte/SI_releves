@@ -15,7 +15,10 @@
         "react-router-dom": "^6.20.1",
         "axios": "^1.6.2",
         "recharts": "^2.10.3",
-        "lucide-react": "^0.294.0"
+        "lucide-react": "^0.294.0",
+        "jspdf": "^2.5.1",
+        "jspdf-autotable": "^3.8.2",
+        "chart.js": "^4.4.1"
     },
     "devDependencies": {
         "@types/react": "^18.2.43",

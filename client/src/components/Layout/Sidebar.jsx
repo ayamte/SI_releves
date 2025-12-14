@@ -7,7 +7,8 @@ import {
     Gauge,
     BarChart3,
     UserCog,
-    LogOut
+    LogOut,
+    ClipboardCheck
 } from 'lucide-react';
 
 export const Sidebar = () => {
@@ -18,7 +19,7 @@ export const Sidebar = () => {
 
     const userMenuItems = [
         { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { path: '/releves', icon: FileText, label: 'Relevés' },
+        { path: '/releves', icon: ClipboardCheck, label: 'Relevés' },
         { path: '/agents', icon: Users, label: 'Agents' },
         { path: '/compteurs', icon: Gauge, label: 'Compteurs' },
         { path: '/rapports', icon: BarChart3, label: 'Rapports' },
@@ -26,6 +27,8 @@ export const Sidebar = () => {
 
     const superadminMenuItems = [
         { path: '/admin/users', icon: UserCog, label: 'Utilisateurs' },
+        { path: '/admin/compteurs', icon: Gauge, label: 'Gestion Compteurs' },
+        { path: '/admin/releves', icon: ClipboardCheck, label: 'Gestion Relevés' },
     ];
 
     const menuItems = user?.role === 'SUPERADMIN' ? superadminMenuItems : userMenuItems;

@@ -3,10 +3,14 @@ import { Link } from 'react-router-dom';
 import { MainLayout } from '../components/Layout/MainLayout';
 import { Card } from '../components/UI/Card';
 import { Badge } from '../components/UI/Badge';
+import { Button } from '../components/UI/Button';
 import { releves, agents, compteurs, adresses, getAgentById, getCompteurById, getAdresseById } from '../data/mockData';
-import { Filter } from 'lucide-react';
+import { Filter, Plus } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export const RelevesList = () => {
+    const { user } = useAuth();
+    const isSuperAdmin = user?.role === 'SUPERADMIN';
     const [filterType, setFilterType] = useState('');
     const [sortBy, setSortBy] = useState('date');
     const [sortOrder, setSortOrder] = useState('desc');
@@ -37,9 +41,19 @@ export const RelevesList = () => {
     return (
         <MainLayout>
             <div className="space-y-6">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-800">Liste des Relevés</h1>
-                    <p className="text-gray-600 mt-1">{sortedReleves.length} relevés au total</p>
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-800">Liste des Relevés</h1>
+                        <p className="text-gray-600 mt-1">{sortedReleves.length} relevés au total</p>
+                    </div>
+                    {isSuperAdmin && (
+                        <Link to="/admin/releves/add">
+                            <Button variant="primary">
+                                <Plus size={20} className="mr-2" />
+                                Ajouter un relevé
+                            </Button>
+                        </Link>
+                    )}
                 </div>
 
                 {/* Filters */}
