@@ -2,9 +2,11 @@
 **/node_modules/
 **/package-lock.json
 
-# Environment variables (uncomment after first setup)
-# **/.env
+# Environment variables
+**/.env
 **/.env.local
+**/.env.staging
+**/.env.production
 
 # Build outputs
 **/dist/
@@ -17,6 +19,19 @@
 # Database
 **/mysql_data/
 
+# Backups
+backups/*.sql
+backups/*.sql.gz
+
+# SSL Certificates
+nginx/ssl/*.pem
+nginx/ssl/*.key
+nginx/ssl/*.crt
+
+# Test coverage
+**/coverage/
+**/.nyc_output
+
 # IDE
 .vscode/
 .idea/
@@ -27,3 +42,14 @@
 # OS
 .DS_Store
 Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Temporary
+tmp/
+temp/
+*.tmp
+
+
+.claude

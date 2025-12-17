@@ -1,0 +1,60 @@
+filebeat.config:
+  modules:
+    path: ${path.config}/modules.d/*.yml
+    reload.enabled: false
+
+# Collecte des logs Docker
+filebeat.autodiscover:
+  providers:
+    - type: docker
+      hints.enabled: true
+      templates:
+        - condition:
+            contains:
+              docker.container.name: "si_releves"
+          config:
+            - type: container
+              paths:
+                - /var/lib/docker/containers/${data.docker.container.id}/*.log
+              fields:
+                application: si-releves
+              fields_under_root: true
+
+# Entrées additionnelles pour les logs spécifiques
+filebeat.inputs:
+  # Logs du backend
+  - type: container
+    paths:
+      - '/var/lib/docker/containers/*/*.log'
+    stream: all
+    processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
+      - decode_json_fields:
+          fields: ["message"]
+          target: ""
+          overwrite_keys: true
+
+# Configuration des processeurs
+processors:
+  - add_cloud_metadata: ~
+  - add_docker_metadata: ~
+  - add_host_metadata: ~
+  - add_fields:
+      target: ''
+      fields:
+        environment: staging
+
+# Output vers Logstash
+output.logstash:
+  hosts: ["logstash:5044"]
+  loadbalance: true
+
+# Logging de Filebeat
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 7
+  permissions: 0644

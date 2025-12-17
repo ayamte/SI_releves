@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # Service d'analyse IA des logs
+  aiops-analyzer:
+    build:
+      context: ./aiops
+      dockerfile: Dockerfile
+    container_name: si_releves_aiops_analyzer
+    restart: unless-stopped
+    ports:
+      - "5005:5000"
+    environment:
+      - ELASTICSEARCH_HOST=si_releves_elasticsearch:9200
+      - KIBANA_HOST=si_releves_kibana:5601
+      - ALERT_THRESHOLD_ERRORS=10
+      - ALERT_THRESHOLD_RESPONSE_TIME=2000
+      - ANALYSIS_INTERVAL=60
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
+      - EMAIL_RECIPIENTS=${EMAIL_RECIPIENTS:-}
+    volumes:
+      - ./aiops/models:/app/models
+      - ./aiops/logs:/app/logs
+      - ./aiops/reports:/app/reports
+    networks:
+      - si_releves_elk_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Dashboard AIOps Web UI
+  aiops-dashboard:
+    build:
+      context: ./aiops/dashboard
+      dockerfile: Dockerfile
+    container_name: si_releves_aiops_dashboard
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - AIOPS_API_URL=http://aiops-analyzer:5000
+      - ELASTICSEARCH_URL=http://si_releves_elasticsearch:9200
+    depends_on:
+      - aiops-analyzer
+    networks:
+      - si_releves_elk_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+networks:
+  si_releves_elk_network:
+    external: true

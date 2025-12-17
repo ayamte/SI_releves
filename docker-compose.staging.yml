@@ -1,0 +1,141 @@
+version: '3.8'
+
+services:
+  # MySQL Database - Production Ready
+  mysql:
+    image: mysql:8.0
+    container_name: si_releves_mysql_staging
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-staging_root_password_change_me}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-si_releves_staging}
+      MYSQL_USER: ${MYSQL_USER:-si_user_staging}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-staging_password_change_me}
+    ports:
+      - "${MYSQL_PORT:-3308}:3306"
+    volumes:
+      - mysql_staging_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./backups:/backups
+    networks:
+      - si_releves_staging_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-staging_root_password_change_me}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --max_connections=200
+      - --innodb_buffer_pool_size=256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Backend API - Production Build
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.staging
+    container_name: si_releves_backend_staging
+    restart: always
+    ports:
+      - "${BACKEND_PORT:-5002}:5001"
+    environment:
+      - NODE_ENV=staging
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=${MYSQL_DATABASE:-si_releves_staging}
+      - DB_USER=${MYSQL_USER:-si_user_staging}
+      - DB_PASSWORD=${MYSQL_PASSWORD:-staging_password_change_me}
+      - JWT_SECRET=${JWT_SECRET:-change_this_jwt_secret_in_production}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-1h}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - PORT=5001
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3001}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - si_releves_staging_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # Frontend - Production Build
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile.staging
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:5002}
+    container_name: si_releves_frontend_staging
+    restart: always
+    ports:
+      - "${FRONTEND_PORT:-3001}:80"
+    depends_on:
+      - backend
+    networks:
+      - si_releves_staging_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Nginx Reverse Proxy (Optional - pour SSL et load balancing)
+  nginx:
+    image: nginx:alpine
+    container_name: si_releves_nginx_staging
+    restart: always
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx/nginx.staging.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_cache:/var/cache/nginx
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - si_releves_staging_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+volumes:
+  mysql_staging_data:
+    driver: local
+  nginx_cache:
+    driver: local
+
+networks:
+  si_releves_staging_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
