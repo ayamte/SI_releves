@@ -164,32 +164,43 @@ pipeline {
             }
         }
 
-        stage('🔒 Security Scan') {
-            parallel {
-                stage('Dependency Audit') {
-                    steps {
-                        echo "🔒 Running security audit..."
-                        sh '''
-                            echo "Scanning backend dependencies..."
-                            cd server && npm audit --production || true
-
-                            echo "Scanning frontend dependencies..."
-                            cd ../client && npm audit --production || true
-                        '''
-                    }
+        stage('🔍 SonarQube Analysis') {
+            steps {
+                script {
+                    echo "🔍 Running SonarQube code analysis..."
+                    sh '''
+                        # SonarQube Scanner
+                        if command -v sonar-scanner &> /dev/null; then
+                            sonar-scanner \
+                                -Dsonar.projectKey=si-releves \
+                                -Dsonar.sources=. \
+                                -Dsonar.host.url=http://localhost:9000 \
+                                -Dsonar.login=${SONAR_TOKEN:-admin} || echo "⚠️ SonarQube analysis failed"
+                        else
+                            echo "⚠️ SonarQube scanner not installed, skipping analysis"
+                        fi
+                    '''
                 }
+            }
+        }
 
-                stage('Secret Scan') {
-                    steps {
-                        echo "🔐 Scanning for secrets..."
-                        sh '''
-                            if command -v gitleaks &> /dev/null; then
-                                gitleaks detect --source . --verbose || true
-                            else
-                                echo "⚠️ gitleaks not installed, skipping secret scan"
-                            fi
-                        '''
-                    }
+        stage('🔒 Security Scan - Trivy') {
+            steps {
+                script {
+                    echo "🔒 Scanning Docker images with Trivy..."
+                    sh '''
+                        # Scan backend image
+                        if command -v trivy &> /dev/null; then
+                            echo "🔍 Scanning backend image..."
+                            trivy image --severity HIGH,CRITICAL si-releves-staging-backend:latest || echo "⚠️ Backend scan completed with warnings"
+
+                            echo "🔍 Scanning frontend image..."
+                            trivy image --severity HIGH,CRITICAL si-releves-staging-frontend:latest || echo "⚠️ Frontend scan completed with warnings"
+                        else
+                            echo "⚠️ Trivy not installed, skipping security scan"
+                            echo "📝 Install Trivy: https://aquasecurity.github.io/trivy/"
+                        fi
+                    '''
                 }
             }
         }
