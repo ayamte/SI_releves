@@ -296,7 +296,7 @@ pipeline {
                         # Wait for AIOps Dashboard
                         echo "Waiting for AIOps Dashboard..."
                         for i in {1..30}; do
-                            if curl -f http://localhost:8080/health 2>/dev/null; then
+                            if curl -f http://localhost:8081/health 2>/dev/null; then
                                 echo " AIOps Dashboard is ready"
                                 break
                             fi
@@ -305,7 +305,7 @@ pipeline {
                         done
 
                         echo " AIOps Stack setup completed"
-                        echo "🌐 AIOps Dashboard: http://localhost:8080"
+                        echo "🌐 AIOps Dashboard: http://localhost:8081"
                     '''
                 }
             }
@@ -437,7 +437,7 @@ pipeline {
                         echo "=========================================" >> $REPORT_FILE
                         echo "Kibana: ${KIBANA_URL}" >> $REPORT_FILE
                         echo "Elasticsearch: ${ELASTICSEARCH_URL}" >> $REPORT_FILE
-                        echo "AIOps Dashboard: http://localhost:8080" >> $REPORT_FILE
+                        echo "AIOps Dashboard: http://localhost:8081" >> $REPORT_FILE
                         echo "" >> $REPORT_FILE
 
                         cat $REPORT_FILE
@@ -503,7 +503,7 @@ pipeline {
 
                             <h3>AIOps - Prédiction d'Anomalies</h3>
                             <ul>
-                                <li><strong>AIOps Dashboard:</strong> <a href="http://localhost:8080">http://localhost:8080</a></li>
+                                <li><strong>AIOps Dashboard:</strong> <a href="http://localhost:8081">http://localhost:8081</a></li>
                                 <li><strong>Analyzer API:</strong> <a href="http://localhost:5005">http://localhost:5005</a></li>
                                 <li><strong>Détection automatique d'anomalies et recommandations</strong></li>
                             </ul>
