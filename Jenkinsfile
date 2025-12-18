@@ -104,28 +104,6 @@ pipeline {
             }
         }
 
-        stage('🔍 Code Quality') {
-            parallel {
-                stage('Lint Backend') {
-                    steps {
-                        dir('server') {
-                            echo "🔍 Linting backend code..."
-                            sh 'npm run lint || true'
-                        }
-                    }
-                }
-
-                stage('Lint Frontend') {
-                    steps {
-                        dir('client') {
-                            echo "🔍 Linting frontend code..."
-                            sh 'npm run lint || true'
-                        }
-                    }
-                }
-            }
-        }
-
         stage('🧪 Run Tests') {
             parallel {
                 stage('Backend Tests') {
