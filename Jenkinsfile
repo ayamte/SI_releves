@@ -83,7 +83,7 @@ pipeline {
                         dir('server') {
                             echo "📦 Installing backend dependencies..."
                             sh '''
-                                npm ci
+                                npm install
                                 echo "✅ Backend dependencies installed"
                             '''
                         }
@@ -95,7 +95,7 @@ pipeline {
                         dir('client') {
                             echo "📦 Installing frontend dependencies..."
                             sh '''
-                                npm ci
+                                npm install
                                 echo "✅ Frontend dependencies installed"
                             '''
                         }
