@@ -254,6 +254,8 @@ pipeline {
                         echo "🧹 Cleaning up ELK resources..."
                         docker compose -f docker-compose.elk.yml down || true
                         docker rm -f si_releves_elasticsearch si_releves_kibana si_releves_logstash si_releves_filebeat si_releves_metricbeat 2>/dev/null || true
+                        sleep 2
+                        docker network prune -f || true
 
                         # Start ELK stack
                         echo "🚀 Starting ELK Stack..."
