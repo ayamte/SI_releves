@@ -218,22 +218,22 @@ pipeline {
                     sh '''
                         # Stop existing services
                         echo "🛑 Stopping existing services..."
-                        docker-compose -f ${COMPOSE_FILE} down || true
+                        docker compose -f ${COMPOSE_FILE} down || true
 
                         # Build images
                         echo "🔨 Building Docker images..."
-                        docker-compose -f ${COMPOSE_FILE} build --no-cache
+                        docker compose -f ${COMPOSE_FILE} build --no-cache
 
                         # Start services
                         echo "🚀 Starting services..."
-                        docker-compose -f ${COMPOSE_FILE} up -d
+                        docker compose -f ${COMPOSE_FILE} up -d
 
                         # Wait for services
                         echo "⏳ Waiting for services to be ready..."
                         sleep 15
 
                         # Check status
-                        docker-compose -f ${COMPOSE_FILE} ps
+                        docker compose -f ${COMPOSE_FILE} ps
                     '''
                 }
             }
@@ -247,7 +247,7 @@ pipeline {
                     sh '''
                         # Start ELK stack
                         echo "🚀 Starting ELK Stack..."
-                        docker-compose -f docker-compose.elk.yml up -d
+                        docker compose -f docker-compose.elk.yml up -d
 
                         # Wait for Elasticsearch
                         echo "⏳ Waiting for Elasticsearch..."
@@ -273,7 +273,7 @@ pipeline {
 
                         # Configure Logstash pipelines
                         echo "⚙️ Configuring Logstash pipelines..."
-                        docker-compose -f docker-compose.elk.yml exec -T logstash logstash-plugin list || true
+                        docker compose -f docker-compose.elk.yml exec -T logstash logstash-plugin list || true
 
                         echo "✅ ELK Stack setup completed"
                     '''
@@ -404,12 +404,12 @@ pipeline {
                         echo "=========================================" >> $REPORT_FILE
                         echo "SERVICES STATUS" >> $REPORT_FILE
                         echo "=========================================" >> $REPORT_FILE
-                        docker-compose -f ${COMPOSE_FILE} ps >> $REPORT_FILE
+                        docker compose -f ${COMPOSE_FILE} ps >> $REPORT_FILE
                         echo "" >> $REPORT_FILE
                         echo "=========================================" >> $REPORT_FILE
                         echo "ELK STACK STATUS" >> $REPORT_FILE
                         echo "=========================================" >> $REPORT_FILE
-                        docker-compose -f docker-compose.elk.yml ps >> $REPORT_FILE
+                        docker compose -f docker-compose.elk.yml ps >> $REPORT_FILE
                         echo "" >> $REPORT_FILE
                         echo "=========================================" >> $REPORT_FILE
                         echo "MONITORING URLS" >> $REPORT_FILE
