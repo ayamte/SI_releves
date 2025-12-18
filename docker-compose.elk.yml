@@ -86,30 +86,30 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Filebeat - Collecteur de logs Docker
-  filebeat:
-    image: docker.elastic.co/beats/filebeat:8.11.0
-    container_name: si_releves_filebeat
-    restart: unless-stopped
-    user: root
-    command: filebeat -e -strict.perms=false
-    volumes:
-      - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - filebeat_data:/usr/share/filebeat/data
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-      logstash:
-        condition: service_started
-    networks:
-      - elk_network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "5m"
-        max-file: "2"
+  # Filebeat - Collecteur de logs Docker (DISABLED - using Winston-Elasticsearch instead)
+  # filebeat:
+  #   image: docker.elastic.co/beats/filebeat:8.11.0
+  #   container_name: si_releves_filebeat
+  #   restart: unless-stopped
+  #   user: root
+  #   command: filebeat -e -strict.perms=false
+  #   volumes:
+  #     - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml
+  #     - /var/lib/docker/containers:/var/lib/docker/containers:ro
+  #     - /var/run/docker.sock:/var/run/docker.sock:ro
+  #     - filebeat_data:/usr/share/filebeat/data
+  #   depends_on:
+  #     elasticsearch:
+  #       condition: service_healthy
+  #     logstash:
+  #       condition: service_started
+  #   networks:
+  #     - elk_network
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "5m"
+  #       max-file: "2"
 
   # Metricbeat - Collecteur de métriques système et Docker (COMMENTED OUT for testing)
   # metricbeat:
