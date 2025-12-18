@@ -37,6 +37,10 @@ fi
 echo "🛑 Stopping existing containers..."
 docker-compose -f docker-compose.staging.yml down
 
+# Remove orphan containers
+echo "🧹 Cleaning up orphan containers..."
+docker rm -f si_releves_frontend_staging si_releves_backend_staging si_releves_mysql_staging 2>/dev/null || true
+
 # Remove old images (optional - uncomment to force rebuild)
 # echo "🗑️ Removing old images..."
 # docker-compose -f docker-compose.staging.yml rm -f
@@ -48,7 +52,7 @@ docker-compose -f docker-compose.staging.yml build --no-cache
 
 # Start services
 echo "🚀 Starting services..."
-docker-compose -f docker-compose.staging.yml up -d
+docker-compose -f docker-compose.staging.yml up -d --remove-orphans
 
 # Wait for services to be healthy
 echo "⏳ Waiting for services to be ready..."
