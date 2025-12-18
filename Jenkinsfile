@@ -39,10 +39,10 @@ pipeline {
     }
 
     stages {
-        stage('📋 Checkout') {
+        stage('Checkout') {
             steps {
                 script {
-                    echo "🔄 Checking out code from devops branch..."
+                    echo "Checking out code from devops branch..."
                     checkout scm
 
                     sh '''
@@ -57,10 +57,10 @@ pipeline {
             }
         }
 
-        stage('🔧 Environment Setup') {
+        stage('Environment Setup') {
             steps {
                 script {
-                    echo "🔧 Setting up staging environment..."
+                    echo "Setting up staging environment..."
 
                     sh '''
                         # Create necessary directories
@@ -68,7 +68,7 @@ pipeline {
 
                         # Create .env.staging if not exists
                         if [ ! -f .env.staging ]; then
-                            echo "⚠️ Warning: .env.staging not found, using example"
+                            echo " Warning: .env.staging not found, using example"
                             cp .env.staging.example .env.staging || true
                         fi
                     '''
@@ -76,15 +76,15 @@ pipeline {
             }
         }
 
-        stage('📦 Install Dependencies') {
+        stage('Install Dependencies') {
             parallel {
                 stage('Backend Dependencies') {
                     steps {
                         dir('server') {
-                            echo "📦 Installing backend dependencies..."
+                            echo "Installing backend dependencies..."
                             sh '''
                                 npm install
-                                echo "✅ Backend dependencies installed"
+                                echo "Backend dependencies installed"
                             '''
                         }
                     }
@@ -93,10 +93,10 @@ pipeline {
                 stage('Frontend Dependencies') {
                     steps {
                         dir('client') {
-                            echo "📦 Installing frontend dependencies..."
+                            echo "Installing frontend dependencies..."
                             sh '''
                                 npm install
-                                echo "✅ Frontend dependencies installed"
+                                echo "Frontend dependencies installed"
                             '''
                         }
                     }
@@ -104,15 +104,15 @@ pipeline {
             }
         }
 
-        stage('🧪 Run Tests') {
+        stage('Run Tests') {
             parallel {
                 stage('Backend Tests') {
                     steps {
                         dir('server') {
-                            echo "🧪 Running backend tests..."
+                            echo "Running backend tests..."
                             sh '''
                                 npm run test:ci
-                                echo "✅ Backend tests completed"
+                                echo "Backend tests completed"
                             '''
 
                             // Publish test results
@@ -134,7 +134,7 @@ pipeline {
                 stage('Frontend Tests') {
                     steps {
                         dir('client') {
-                            echo "🧪 Running frontend tests..."
+                            echo "Running frontend tests..."
                             sh 'npm run test:ci || true'
                         }
                     }
@@ -142,10 +142,10 @@ pipeline {
             }
         }
 
-        stage('🔍 SonarQube Analysis') {
+        stage('SonarQube Analysis') {
             steps {
                 script {
-                    echo "🔍 Running SonarQube code analysis..."
+                    echo "Running SonarQube code analysis..."
                     sh '''
                         # SonarQube Scanner
                         if command -v sonar-scanner &> /dev/null; then
@@ -153,60 +153,44 @@ pipeline {
                                 -Dsonar.projectKey=si-releves \
                                 -Dsonar.sources=. \
                                 -Dsonar.host.url=http://localhost:9000 \
-                                -Dsonar.login=${SONAR_TOKEN:-admin} || echo "⚠️ SonarQube analysis failed"
+                                -Dsonar.login=${SONAR_TOKEN:-admin} || echo "SonarQube analysis failed"
                         else
-                            echo "⚠️ SonarQube scanner not installed, skipping analysis"
+                            echo "SonarQube scanner not installed, skipping analysis"
                         fi
                     '''
                 }
             }
         }
 
-        stage('🔒 Security Scan - Trivy') {
+        stage('Security Scan - Trivy') {
             steps {
                 script {
-                    echo "🔒 Scanning Docker images with Trivy..."
+                    echo "Scanning Docker images with Trivy..."
                     sh '''
                         # Scan backend image
                         if command -v trivy &> /dev/null; then
-                            echo "🔍 Scanning backend image..."
-                            trivy image --severity HIGH,CRITICAL si-releves-staging-backend:latest || echo "⚠️ Backend scan completed with warnings"
+                            echo "Scanning backend image..."
+                            trivy image --severity HIGH,CRITICAL si-releves-staging-backend:latest || echo "Backend scan completed with warnings"
 
-                            echo "🔍 Scanning frontend image..."
-                            trivy image --severity HIGH,CRITICAL si-releves-staging-frontend:latest || echo "⚠️ Frontend scan completed with warnings"
+                            echo "Scanning frontend image..."
+                            trivy image --severity HIGH,CRITICAL si-releves-staging-frontend:latest || echo "Frontend scan completed with warnings"
                         else
-                            echo "⚠️ Trivy not installed, skipping security scan"
-                            echo "📝 Install Trivy: https://aquasecurity.github.io/trivy/"
+                            echo "Trivy not installed, skipping security scan"
+                            echo "Install Trivy: https://aquasecurity.github.io/trivy/"
                         fi
                     '''
                 }
             }
         }
 
-        stage('💾 Backup Database') {
+        stage('Build & Deploy') {
             steps {
                 script {
-                    echo "💾 Creating database backup before deployment..."
-                    sh '''
-                        if [ -f scripts/backup-staging.sh ]; then
-                            chmod +x scripts/backup-staging.sh
-                            ./scripts/backup-staging.sh || echo "⚠️ Backup failed, continuing..."
-                        else
-                            echo "⚠️ Backup script not found, skipping backup"
-                        fi
-                    '''
-                }
-            }
-        }
-
-        stage('🐳 Build & Deploy') {
-            steps {
-                script {
-                    echo "🐳 Building and deploying to staging..."
+                    echo "Building and deploying to staging..."
 
                     sh '''
                         # Stop existing services
-                        echo "🛑 Stopping existing services..."
+                        echo " Stopping existing services..."
                         docker compose -f ${COMPOSE_FILE} down || true
 
                         # Clean up orphan containers and networks
@@ -223,7 +207,7 @@ pipeline {
                         docker compose -f ${COMPOSE_FILE} up -d --remove-orphans
 
                         # Wait for services
-                        echo "⏳ Waiting for services to be ready..."
+                        echo "Waiting for services to be ready..."
                         sleep 15
 
                         # Check status
@@ -251,10 +235,10 @@ pipeline {
                         docker compose -f docker-compose.elk.yml up -d --remove-orphans
 
                         # Wait for Elasticsearch
-                        echo "⏳ Waiting for Elasticsearch..."
+                        echo "Waiting for Elasticsearch..."
                         for i in {1..30}; do
                             if curl -f ${ELASTICSEARCH_URL}/_cluster/health 2>/dev/null; then
-                                echo "✅ Elasticsearch is ready"
+                                echo " Elasticsearch is ready"
                                 break
                             fi
                             echo "Waiting for Elasticsearch... ($i/30)"
@@ -262,10 +246,10 @@ pipeline {
                         done
 
                         # Wait for Kibana
-                        echo "⏳ Waiting for Kibana..."
+                        echo "Waiting for Kibana..."
                         for i in {1..30}; do
                             if curl -f ${KIBANA_URL}/api/status 2>/dev/null; then
-                                echo "✅ Kibana is ready"
+                                echo " Kibana is ready"
                                 break
                             fi
                             echo "Waiting for Kibana... ($i/30)"
@@ -273,10 +257,10 @@ pipeline {
                         done
 
                         # Configure Logstash pipelines
-                        echo "⚙️ Configuring Logstash pipelines..."
+                        echo " Configuring Logstash pipelines..."
                         docker compose -f docker-compose.elk.yml exec -T logstash logstash-plugin list || true
 
-                        echo "✅ ELK Stack setup completed"
+                        echo " ELK Stack setup completed"
                     '''
                 }
             }
@@ -299,10 +283,10 @@ pipeline {
                         docker compose -f docker-compose.aiops.yml up -d --remove-orphans
 
                         # Wait for AIOps Analyzer
-                        echo "⏳ Waiting for AIOps Analyzer..."
+                        echo "Waiting for AIOps Analyzer..."
                         for i in {1..30}; do
                             if curl -f http://localhost:5005/health 2>/dev/null; then
-                                echo "✅ AIOps Analyzer is ready"
+                                echo " AIOps Analyzer is ready"
                                 break
                             fi
                             echo "Waiting for AIOps Analyzer... ($i/30)"
@@ -310,17 +294,17 @@ pipeline {
                         done
 
                         # Wait for AIOps Dashboard
-                        echo "⏳ Waiting for AIOps Dashboard..."
+                        echo "Waiting for AIOps Dashboard..."
                         for i in {1..30}; do
                             if curl -f http://localhost:8080/health 2>/dev/null; then
-                                echo "✅ AIOps Dashboard is ready"
+                                echo " AIOps Dashboard is ready"
                                 break
                             fi
                             echo "Waiting for AIOps Dashboard... ($i/30)"
                             sleep 5
                         done
 
-                        echo "✅ AIOps Stack setup completed"
+                        echo " AIOps Stack setup completed"
                         echo "🌐 AIOps Dashboard: http://localhost:8080"
                     '''
                 }
@@ -348,7 +332,7 @@ pipeline {
                                     "title": "logs-*",
                                     "timeFieldName": "@timestamp"
                                 }
-                            }' || echo "⚠️ Index pattern creation failed, might already exist"
+                            }' || echo " Index pattern creation failed, might already exist"
 
                         # Create index pattern for application logs
                         curl -X POST "${KIBANA_URL}/api/saved_objects/index-pattern/si-releves-*" \
@@ -359,9 +343,9 @@ pipeline {
                                     "title": "si-releves-*",
                                     "timeFieldName": "@timestamp"
                                 }
-                            }' || echo "⚠️ Application index pattern creation failed"
+                            }' || echo " Application index pattern creation failed"
 
-                        echo "✅ Monitoring configuration completed"
+                        echo " Monitoring configuration completed"
                         echo "🌐 Kibana Dashboard: ${KIBANA_URL}"
                         echo "🔍 Elasticsearch: ${ELASTICSEARCH_URL}"
                     '''
@@ -387,7 +371,7 @@ pipeline {
                         echo "Checking MySQL container health..."
                         docker inspect si_releves_mysql_staging --format='{{.State.Health.Status}}' || echo "MySQL container not found"
 
-                        echo "✅ Container health checks completed!"
+                        echo " Container health checks completed!"
                     '''
                 }
             }
@@ -409,7 +393,7 @@ pipeline {
                         echo "Checking backend logs..."
                         docker compose -f ${COMPOSE_FILE} logs backend --tail=20
 
-                        echo "✅ Smoke tests completed!"
+                        echo " Smoke tests completed!"
                     '''
                 }
             }
@@ -483,15 +467,15 @@ pipeline {
 
         success {
             script {
-                echo "✅ Pipeline completed successfully!"
+                echo " Pipeline completed successfully!"
 
                 // Send success notification
                 emailext (
-                    subject: "✅ SUCCESS: SI Relevés Staging Deployment [Build #${env.BUILD_NUMBER}]",
+                    subject: "SUCCESS: SI Relevés Staging Deployment [Build #${env.BUILD_NUMBER}]",
                     body: """
                         <html>
                         <body style="font-family: Arial, sans-serif;">
-                            <h2 style="color: #28a745;">✅ Déploiement Staging Réussi</h2>
+                            <h2 style="color: #28a745;"> Déploiement Staging Réussi</h2>
 
                             <h3>Informations du Build</h3>
                             <ul>
@@ -505,26 +489,26 @@ pipeline {
 
                             <h3>Services Déployés</h3>
                             <ul>
-                                <li>✅ Frontend - <a href="http://localhost:3001">http://localhost:3001</a></li>
-                                <li>✅ Backend - <a href="http://localhost:5002/api">http://localhost:5002/api</a></li>
-                                <li>✅ MySQL - localhost:3308</li>
+                                <li>Frontend - <a href="http://localhost:3001">http://localhost:3001</a></li>
+                                <li>Backend - <a href="http://localhost:5002/api">http://localhost:5002/api</a></li>
+                                <li>MySQL - localhost:3308</li>
                             </ul>
 
-                            <h3>📊 Monitoring & Logs</h3>
+                            <h3>Monitoring & Logs</h3>
                             <ul>
-                                <li>📊 <strong>Kibana Dashboard:</strong> <a href="${KIBANA_URL}">${KIBANA_URL}</a></li>
-                                <li>🔍 <strong>Elasticsearch:</strong> <a href="${ELASTICSEARCH_URL}">${ELASTICSEARCH_URL}</a></li>
-                                <li>📈 <strong>Logs Index:</strong> logs-* et si-releves-*</li>
+                                <li><strong>Kibana Dashboard:</strong> <a href="${KIBANA_URL}">${KIBANA_URL}</a></li>
+                                <li><strong>Elasticsearch:</strong> <a href="${ELASTICSEARCH_URL}">${ELASTICSEARCH_URL}</a></li>
+                                <li><strong>Logs Index:</strong> logs-* et si-releves-*</li>
                             </ul>
 
-                            <h3>🤖 AIOps - Prédiction d'Anomalies</h3>
+                            <h3>AIOps - Prédiction d'Anomalies</h3>
                             <ul>
-                                <li>🤖 <strong>AIOps Dashboard:</strong> <a href="http://localhost:8080">http://localhost:8080</a></li>
-                                <li>🧠 <strong>Analyzer API:</strong> <a href="http://localhost:5005">http://localhost:5005</a></li>
-                                <li>📈 <strong>Détection automatique d'anomalies et recommandations</strong></li>
+                                <li><strong>AIOps Dashboard:</strong> <a href="http://localhost:8080">http://localhost:8080</a></li>
+                                <li><strong>Analyzer API:</strong> <a href="http://localhost:5005">http://localhost:5005</a></li>
+                                <li><strong>Détection automatique d'anomalies et recommandations</strong></li>
                             </ul>
 
-                            <h3>🔍 Rapports</h3>
+                            <h3>Rapports</h3>
                             <ul>
                                 <li><a href="${env.BUILD_URL}Backend_20Coverage_20Report/">Backend Coverage Report</a></li>
                                 <li><a href="${env.BUILD_URL}artifact/logs/deployment-report-${env.BUILD_NUMBER}.txt">Deployment Report</a></li>
@@ -532,14 +516,14 @@ pipeline {
                             </ul>
 
                             <p style="margin-top: 20px;">
-                                <strong>⚡ Quick Actions:</strong><br>
+                                <strong>Quick Actions:</strong><br>
                                 • Voir les logs: <code>docker-compose -f docker-compose.staging.yml logs -f</code><br>
                                 • Accéder à Kibana: <a href="${KIBANA_URL}">${KIBANA_URL}</a><br>
                                 • Redémarrer: <code>docker-compose -f docker-compose.staging.yml restart</code>
                             </p>
 
                             <p style="color: #6c757d; margin-top: 30px;">
-                                <em>"If you can't see it, you can't fix it." - Monitoring actif ✅</em>
+                                <em>"If you can't see it, you can't fix it." - Monitoring actif</em>
                             </p>
                         </body>
                         </html>
@@ -552,15 +536,15 @@ pipeline {
 
         failure {
             script {
-                echo "❌ Pipeline failed!"
+                echo " Pipeline failed!"
 
                 // Send failure notification
                 emailext (
-                    subject: "❌ FAILURE: SI Relevés Staging Deployment [Build #${env.BUILD_NUMBER}]",
+                    subject: "FAILURE: SI Relevés Staging Deployment [Build #${env.BUILD_NUMBER}]",
                     body: """
                         <html>
                         <body style="font-family: Arial, sans-serif;">
-                            <h2 style="color: #dc3545;">❌ Échec du Déploiement Staging</h2>
+                            <h2 style="color: #dc3545;"> Échec du Déploiement Staging</h2>
 
                             <h3>Informations du Build</h3>
                             <ul>
@@ -594,7 +578,7 @@ pipeline {
         }
 
         unstable {
-            echo "⚠️ Pipeline is unstable - Some tests failed but build continued"
+            echo " Pipeline is unstable - Some tests failed but build continued"
         }
 
         aborted {
