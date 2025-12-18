@@ -1,4 +1,4 @@
-# SI Relevés - Système de Gestion des Relevés de Compteur
+# SI Relevés - Système de Gestion des Relevés de Compteurs
 
 Application web pour la gestion des relevés de compteurs d'eau et d'électricité pour Rabat Energie & Eau (REE).
 
