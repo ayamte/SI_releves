@@ -250,9 +250,14 @@ pipeline {
                     echo "📊 Setting up ELK Stack for monitoring..."
 
                     sh '''
+                        # Clean up ELK resources first
+                        echo "🧹 Cleaning up ELK resources..."
+                        docker compose -f docker-compose.elk.yml down || true
+                        docker rm -f si_releves_elasticsearch si_releves_kibana si_releves_logstash si_releves_filebeat si_releves_metricbeat 2>/dev/null || true
+
                         # Start ELK stack
                         echo "🚀 Starting ELK Stack..."
-                        docker compose -f docker-compose.elk.yml up -d
+                        docker compose -f docker-compose.elk.yml up -d --remove-orphans
 
                         # Wait for Elasticsearch
                         echo "⏳ Waiting for Elasticsearch..."
