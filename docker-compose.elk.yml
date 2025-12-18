@@ -86,56 +86,6 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Filebeat - Collecteur de logs Docker (DISABLED - using Winston-Elasticsearch instead)
-  # filebeat:
-  #   image: docker.elastic.co/beats/filebeat:8.11.0
-  #   container_name: si_releves_filebeat
-  #   restart: unless-stopped
-  #   user: root
-  #   command: filebeat -e -strict.perms=false
-  #   volumes:
-  #     - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml
-  #     - /var/lib/docker/containers:/var/lib/docker/containers:ro
-  #     - /var/run/docker.sock:/var/run/docker.sock:ro
-  #     - filebeat_data:/usr/share/filebeat/data
-  #   depends_on:
-  #     elasticsearch:
-  #       condition: service_healthy
-  #     logstash:
-  #       condition: service_started
-  #   networks:
-  #     - elk_network
-  #   logging:
-  #     driver: "json-file"
-  #     options:
-  #       max-size: "5m"
-  #       max-file: "2"
-
-  # Metricbeat - Collecteur de métriques système et Docker (COMMENTED OUT for testing)
-  # metricbeat:
-  #   image: docker.elastic.co/beats/metricbeat:8.11.0
-  #   container_name: si_releves_metricbeat
-  #   restart: unless-stopped
-  #   user: root
-  #   command: metricbeat -e -strict.perms=false
-  #   volumes:
-  #     - ./elk/metricbeat/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
-  #     - /var/run/docker.sock:/var/run/docker.sock:ro
-  #     - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
-  #     - /proc:/hostfs/proc:ro
-  #     - /:/hostfs:ro
-  #     - metricbeat_data:/usr/share/metricbeat/data
-  #   depends_on:
-  #     elasticsearch:
-  #       condition: service_healthy
-  #   networks:
-  #     - elk_network
-  #   logging:
-  #     driver: "json-file"
-  #     options:
-  #       max-size: "5m"
-  #       max-file: "2"
-
 volumes:
   elasticsearch_data:
     driver: local
@@ -144,9 +94,9 @@ volumes:
   metricbeat_data:
     driver: local
 
-networks:
-  elk_network:
+    
+networks:  
+  elk_network:  
+    driver: bridge  
+  si_releves_staging_network:  
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.25.0.0/16

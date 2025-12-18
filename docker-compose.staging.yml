@@ -105,39 +105,15 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Nginx Reverse Proxy (Optional - pour SSL et load balancing)
-  # COMMENTED OUT: Frontend already has nginx built-in
-  # nginx:
-  #   image: nginx:alpine
-  #   container_name: si_releves_nginx_staging
-  #   restart: always
-  #   ports:
-  #     - "${NGINX_HTTP_PORT:-80}:80"
-  #     - "${NGINX_HTTPS_PORT:-443}:443"
-  #   volumes:
-  #     - ./nginx/nginx.staging.conf:/etc/nginx/nginx.conf:ro
-  #     - ./nginx/ssl:/etc/nginx/ssl:ro
-  #     - nginx_cache:/var/cache/nginx
-  #   depends_on:
-  #     - backend
-  #     - frontend
-  #   networks:
-  #     - si_releves_staging_network
-  #   logging:
-  #     driver: "json-file"
-  #     options:
-  #       max-size: "5m"
-  #       max-file: "3"
+
 
 volumes:
   mysql_staging_data:
     driver: local
   nginx_cache:
     driver: local
-
-networks:
-  si_releves_staging_network:
+networks:  
+  elk_network:  
+    driver: bridge  
+  si_releves_staging_network:  
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
