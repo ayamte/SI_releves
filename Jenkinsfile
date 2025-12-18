@@ -194,16 +194,16 @@ pipeline {
                         docker compose -f ${COMPOSE_FILE} down || true
 
                         # Clean up orphan containers and networks
-                        echo "🧹 Cleaning up orphan resources..."
+                        echo " Cleaning up orphan resources..."
                         docker rm -f si_releves_frontend_staging si_releves_backend_staging si_releves_mysql_staging 2>/dev/null || true
                         docker network prune -f || true
 
                         # Build images
-                        echo "🔨 Building Docker images..."
+                        echo " Building Docker images..."
                         docker compose -f ${COMPOSE_FILE} build --no-cache
 
                         # Start services
-                        echo "🚀 Starting services..."
+                        echo " Starting services..."
                         docker compose -f ${COMPOSE_FILE} up -d --remove-orphans
 
                         # Wait for services
@@ -220,7 +220,7 @@ pipeline {
         stage(' Setup ELK Stack') {
             steps {
                 script {
-                    echo "📊 Setting up ELK Stack for monitoring..."
+                    echo " Setting up ELK Stack for monitoring..."
 
                     sh '''
                         # Clean up ELK resources first
@@ -231,7 +231,7 @@ pipeline {
                         docker network prune -f || true
 
                         # Start ELK stack
-                        echo "🚀 Starting ELK Stack..."
+                        echo " Starting ELK Stack..."
                         docker compose -f docker-compose.elk.yml up -d --remove-orphans
 
                         # Wait for Elasticsearch
@@ -269,7 +269,7 @@ pipeline {
         stage(' Setup AIOps Stack') {
             steps {
                 script {
-                    echo "🤖 Setting up AIOps Stack for anomaly detection..."
+                    echo " Setting up AIOps Stack for anomaly detection..."
 
                     sh '''
                         # Clean up AIOps resources first (without touching the network)
@@ -304,7 +304,7 @@ pipeline {
                         done
 
                         echo " AIOps Stack setup completed"
-                        echo "🌐 AIOps Dashboard: http://localhost:8081"
+                        echo " AIOps Dashboard: http://localhost:8081"
                     '''
                 }
             }
@@ -313,11 +313,11 @@ pipeline {
         stage(' Configure Monitoring') {
             steps {
                 script {
-                    echo "📈 Configuring monitoring dashboards..."
+                    echo " Configuring monitoring dashboards..."
 
                     sh '''
                         # Import Kibana dashboards
-                        echo "📊 Importing Kibana dashboards..."
+                        echo " Importing Kibana dashboards..."
 
                         # Wait a bit for Kibana to be fully ready
                         sleep 10
@@ -345,8 +345,8 @@ pipeline {
                             }' || echo " Application index pattern creation failed"
 
                         echo " Monitoring configuration completed"
-                        echo "🌐 Kibana Dashboard: ${KIBANA_URL}"
-                        echo "🔍 Elasticsearch: ${ELASTICSEARCH_URL}"
+                        echo " Kibana Dashboard: ${KIBANA_URL}"
+                        echo " Elasticsearch: ${ELASTICSEARCH_URL}"
                     '''
                 }
             }
@@ -355,7 +355,7 @@ pipeline {
         stage(' Health Check') {
             steps {
                 script {
-                    echo "🏥 Running health checks..."
+                    echo " Running health checks..."
 
                     sh '''
                         echo "Checking containers status..."
@@ -379,7 +379,7 @@ pipeline {
         stage(' Smoke Tests') {
             steps {
                 script {
-                    echo "💨 Running smoke tests..."
+                    echo " Running smoke tests..."
 
                     sh '''
                         echo "Checking containers are running..."
@@ -401,7 +401,7 @@ pipeline {
         stage(' Generate Reports') {
             steps {
                 script {
-                    echo "📊 Generating deployment report..."
+                    echo " Generating deployment report..."
 
                     sh '''
                         # Create deployment report
@@ -554,7 +554,7 @@ pipeline {
                                 <li><strong>Durée:</strong> ${currentBuild.durationString}</li>
                             </ul>
 
-                            <h3>🔍 Dépannage</h3>
+                            <h3> Dépannage</h3>
                             <ul>
                                 <li><a href="${env.BUILD_URL}console">Voir Console Output</a></li>
                                 <li>Vérifier les logs: <code>docker-compose -f docker-compose.staging.yml logs</code></li>
@@ -581,7 +581,7 @@ pipeline {
         }
 
         aborted {
-            echo "🛑 Pipeline was aborted"
+            echo " Pipeline was aborted"
         }
     }
 }
