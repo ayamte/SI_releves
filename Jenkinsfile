@@ -31,10 +31,10 @@ pipeline {
     }
 
     triggers {
-        // Poll SCM every 5 minutes for exploitation branch
+        // Poll SCM every 5 minutes for devops branch
         pollSCM('H/5 * * * *')
 
-        // GitHub webhook - triggers on push to exploitation branch
+        // GitHub webhook - triggers on push to devops branch
         githubPush()
     }
 
@@ -42,7 +42,7 @@ pipeline {
         stage('📋 Checkout') {
             steps {
                 script {
-                    echo "🔄 Checking out code from exploitation branch..."
+                    echo "🔄 Checking out code from devops branch..."
                     checkout scm
 
                     sh '''
