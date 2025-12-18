@@ -217,7 +217,7 @@ pipeline {
             }
         }
 
-        stage('📊 Setup ELK Stack') {
+        stage(' Setup ELK Stack') {
             steps {
                 script {
                     echo "📊 Setting up ELK Stack for monitoring..."
@@ -266,20 +266,19 @@ pipeline {
             }
         }
 
-        stage('🤖 Setup AIOps Stack') {
+        stage(' Setup AIOps Stack') {
             steps {
                 script {
                     echo "🤖 Setting up AIOps Stack for anomaly detection..."
 
                     sh '''
-                        # Clean up AIOps resources first
-                        echo "🧹 Cleaning up AIOps resources..."
-                        docker compose -f docker-compose.aiops.yml down || true
+                        # Clean up AIOps resources first (without touching the network)
+                        echo "Cleaning up AIOps resources..."
                         docker rm -f si_releves_aiops_analyzer si_releves_aiops_dashboard 2>/dev/null || true
                         sleep 2
 
                         # Start AIOps stack
-                        echo "🚀 Starting AIOps Stack..."
+                        echo "Starting AIOps Stack..."
                         docker compose -f docker-compose.aiops.yml up -d --remove-orphans
 
                         # Wait for AIOps Analyzer
@@ -311,7 +310,7 @@ pipeline {
             }
         }
 
-        stage('📈 Configure Monitoring') {
+        stage(' Configure Monitoring') {
             steps {
                 script {
                     echo "📈 Configuring monitoring dashboards..."
@@ -353,7 +352,7 @@ pipeline {
             }
         }
 
-        stage('🏥 Health Check') {
+        stage(' Health Check') {
             steps {
                 script {
                     echo "🏥 Running health checks..."
@@ -377,7 +376,7 @@ pipeline {
             }
         }
 
-        stage('💨 Smoke Tests') {
+        stage(' Smoke Tests') {
             steps {
                 script {
                     echo "💨 Running smoke tests..."
@@ -399,7 +398,7 @@ pipeline {
             }
         }
 
-        stage('📊 Generate Reports') {
+        stage(' Generate Reports') {
             steps {
                 script {
                     echo "📊 Generating deployment report..."
@@ -453,7 +452,7 @@ pipeline {
     post {
         always {
             script {
-                echo "🧹 Cleaning up..."
+                echo " Cleaning up..."
 
                 // Archive artifacts
                 archiveArtifacts artifacts: '**/coverage/**/*', allowEmptyArchive: true
