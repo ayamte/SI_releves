@@ -61,6 +61,7 @@ services:
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - PORT=5001
       - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3001}
+      - ELASTICSEARCH_URL=http://host.docker.internal:9200
     depends_on:
       mysql:
         condition: service_healthy
