@@ -24,9 +24,10 @@ const User = sequelize.define('User', {
             isEmail: true
         }
     },
-    password: {
+    mot_de_passe: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: false,
+        field: 'mot_de_passe'
     },
     role: {
         type: DataTypes.ENUM('SUPERADMIN', 'ADMIN', 'USER', 'AGENT'),
@@ -39,25 +40,25 @@ const User = sequelize.define('User', {
     }
 }, {
     timestamps: true,
-    tableName: 'users',
+    tableName: 'utilisateurs',
     hooks: {
         beforeCreate: async (user) => {
-            if (user.password) {
+            if (user.mot_de_passe) {
                 const salt = await bcrypt.genSalt(10);
-                user.password = await bcrypt.hash(user.password, salt);
+                user.mot_de_passe = await bcrypt.hash(user.mot_de_passe, salt);
             }
         },
         beforeUpdate: async (user) => {
-            if (user.changed('password')) {
+            if (user.changed('mot_de_passe')) {
                 const salt = await bcrypt.genSalt(10);
-                user.password = await bcrypt.hash(user.password, salt);
+                user.mot_de_passe = await bcrypt.hash(user.mot_de_passe, salt);
             }
         }
     }
 });
 
 User.prototype.validatePassword = async function (password) {
-    return await bcrypt.compare(password, this.password);
+    return await bcrypt.compare(password, this.mot_de_passe);
 };
 
 export default User;

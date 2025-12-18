@@ -293,6 +293,51 @@ pipeline {
             }
         }
 
+        stage('🤖 Setup AIOps Stack') {
+            steps {
+                script {
+                    echo "🤖 Setting up AIOps Stack for anomaly detection..."
+
+                    sh '''
+                        # Clean up AIOps resources first
+                        echo "🧹 Cleaning up AIOps resources..."
+                        docker compose -f docker-compose.aiops.yml down || true
+                        docker rm -f si_releves_aiops_analyzer si_releves_aiops_dashboard 2>/dev/null || true
+                        sleep 2
+
+                        # Start AIOps stack
+                        echo "🚀 Starting AIOps Stack..."
+                        docker compose -f docker-compose.aiops.yml up -d --remove-orphans
+
+                        # Wait for AIOps Analyzer
+                        echo "⏳ Waiting for AIOps Analyzer..."
+                        for i in {1..30}; do
+                            if curl -f http://localhost:5005/health 2>/dev/null; then
+                                echo "✅ AIOps Analyzer is ready"
+                                break
+                            fi
+                            echo "Waiting for AIOps Analyzer... ($i/30)"
+                            sleep 5
+                        done
+
+                        # Wait for AIOps Dashboard
+                        echo "⏳ Waiting for AIOps Dashboard..."
+                        for i in {1..30}; do
+                            if curl -f http://localhost:8080/health 2>/dev/null; then
+                                echo "✅ AIOps Dashboard is ready"
+                                break
+                            fi
+                            echo "Waiting for AIOps Dashboard... ($i/30)"
+                            sleep 5
+                        done
+
+                        echo "✅ AIOps Stack setup completed"
+                        echo "🌐 AIOps Dashboard: http://localhost:8080"
+                    '''
+                }
+            }
+        }
+
         stage('📈 Configure Monitoring') {
             steps {
                 script {
@@ -410,10 +455,16 @@ pipeline {
                         docker compose -f docker-compose.elk.yml ps >> $REPORT_FILE
                         echo "" >> $REPORT_FILE
                         echo "=========================================" >> $REPORT_FILE
+                        echo "AIOPS STACK STATUS" >> $REPORT_FILE
+                        echo "=========================================" >> $REPORT_FILE
+                        docker compose -f docker-compose.aiops.yml ps >> $REPORT_FILE
+                        echo "" >> $REPORT_FILE
+                        echo "=========================================" >> $REPORT_FILE
                         echo "MONITORING URLS" >> $REPORT_FILE
                         echo "=========================================" >> $REPORT_FILE
                         echo "Kibana: ${KIBANA_URL}" >> $REPORT_FILE
                         echo "Elasticsearch: ${ELASTICSEARCH_URL}" >> $REPORT_FILE
+                        echo "AIOps Dashboard: http://localhost:8080" >> $REPORT_FILE
                         echo "" >> $REPORT_FILE
 
                         cat $REPORT_FILE
@@ -475,6 +526,13 @@ pipeline {
                                 <li>📊 <strong>Kibana Dashboard:</strong> <a href="${KIBANA_URL}">${KIBANA_URL}</a></li>
                                 <li>🔍 <strong>Elasticsearch:</strong> <a href="${ELASTICSEARCH_URL}">${ELASTICSEARCH_URL}</a></li>
                                 <li>📈 <strong>Logs Index:</strong> logs-* et si-releves-*</li>
+                            </ul>
+
+                            <h3>🤖 AIOps - Prédiction d'Anomalies</h3>
+                            <ul>
+                                <li>🤖 <strong>AIOps Dashboard:</strong> <a href="http://localhost:8080">http://localhost:8080</a></li>
+                                <li>🧠 <strong>Analyzer API:</strong> <a href="http://localhost:5005">http://localhost:5005</a></li>
+                                <li>📈 <strong>Détection automatique d'anomalies et recommandations</strong></li>
                             </ul>
 
                             <h3>🔍 Rapports</h3>

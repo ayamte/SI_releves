@@ -64,7 +64,7 @@ export const login = async (req, res) => {
 export const getMe = async (req, res) => {
     try {
         const user = await User.findByPk(req.user.id, {
-            attributes: { exclude: ['password'] }
+            attributes: { exclude: ['mot_de_passe'] }
         });
         res.json(user);
     } catch (error) {
@@ -93,7 +93,7 @@ export const changePassword = async (req, res) => {
         }
 
         // Update password
-        user.password = newPassword;
+        user.mot_de_passe = newPassword;
         await user.save();
 
         res.json({
