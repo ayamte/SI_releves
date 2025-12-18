@@ -88,7 +88,7 @@ services:
     container_name: si_releves_frontend_staging
     restart: always
     ports:
-      - "${FRONTEND_PORT:-3001}:80"
+      - "${FRONTEND_PORT:-3000}:80"
     depends_on:
       - backend
     networks:
