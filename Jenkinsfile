@@ -220,13 +220,18 @@ pipeline {
                         echo "🛑 Stopping existing services..."
                         docker compose -f ${COMPOSE_FILE} down || true
 
+                        # Clean up orphan containers and networks
+                        echo "🧹 Cleaning up orphan resources..."
+                        docker rm -f si_releves_frontend_staging si_releves_backend_staging si_releves_mysql_staging 2>/dev/null || true
+                        docker network prune -f || true
+
                         # Build images
                         echo "🔨 Building Docker images..."
                         docker compose -f ${COMPOSE_FILE} build --no-cache
 
                         # Start services
                         echo "🚀 Starting services..."
-                        docker compose -f ${COMPOSE_FILE} up -d
+                        docker compose -f ${COMPOSE_FILE} up -d --remove-orphans
 
                         # Wait for services
                         echo "⏳ Waiting for services to be ready..."
