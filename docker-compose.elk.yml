@@ -42,9 +42,10 @@ services:
       - "5000:5000/udp"   # UDP input
     environment:
       - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
+      - xpack.monitoring.enabled=true
+      - xpack.monitoring.elasticsearch.hosts=http://elasticsearch:9200
     volumes:
-      - ./elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
-      - ./elk/logstash/config:/usr/share/logstash/config:ro
+      - ./elk/logstash/pipeline:/usr/share/logstash/pipeline
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -65,10 +66,9 @@ services:
       - "5601:5601"
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - ELASTICSEARCH_USERNAME=elastic
-      - ELASTICSEARCH_PASSWORD=changeme
-    volumes:
-      - ./elk/kibana/config:/usr/share/kibana/config:ro
+      - SERVER_NAME=si-releves-kibana
+      - SERVER_HOST=0.0.0.0
+      - MONITORING_UI_CONTAINER_ELASTICSEARCH_ENABLED=true
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -86,30 +86,30 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Filebeat - Collecteur de logs Docker (COMMENTED OUT for testing)
-  # filebeat:
-  #   image: docker.elastic.co/beats/filebeat:8.11.0
-  #   container_name: si_releves_filebeat
-  #   restart: unless-stopped
-  #   user: root
-  #   command: filebeat -e -strict.perms=false
-  #   volumes:
-  #     - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-  #     - /var/lib/docker/containers:/var/lib/docker/containers:ro
-  #     - /var/run/docker.sock:/var/run/docker.sock:ro
-  #     - filebeat_data:/usr/share/filebeat/data
-  #   depends_on:
-  #     elasticsearch:
-  #       condition: service_healthy
-  #     logstash:
-  #       condition: service_started
-  #   networks:
-  #     - elk_network
-  #   logging:
-  #     driver: "json-file"
-  #     options:
-  #       max-size: "5m"
-  #       max-file: "2"
+  # Filebeat - Collecteur de logs Docker
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.11.0
+    container_name: si_releves_filebeat
+    restart: unless-stopped
+    user: root
+    command: filebeat -e -strict.perms=false
+    volumes:
+      - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - filebeat_data:/usr/share/filebeat/data
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      logstash:
+        condition: service_started
+    networks:
+      - elk_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
 
   # Metricbeat - Collecteur de métriques système et Docker (COMMENTED OUT for testing)
   # metricbeat:
@@ -149,4 +149,4 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.21.0.0/16
+        - subnet: 172.25.0.0/16
