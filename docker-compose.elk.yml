@@ -95,8 +95,7 @@ volumes:
     driver: local
 
     
-networks:  
-  elk_network:  
-    driver: bridge  
-  si_releves_staging_network:  
+networks:
+  elk_network:
+    name: si-releves-staging_elk_network
     driver: bridge

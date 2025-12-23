@@ -230,6 +230,10 @@ pipeline {
                         sleep 2
                         docker network prune -f || true
 
+                        # Create shared network for ELK and AIOps
+                        echo "🌐 Creating shared network for ELK and AIOps..."
+                        docker network create si-releves-staging_elk_network 2>/dev/null || echo "Network already exists"
+
                         # Start ELK stack
                         echo " Starting ELK Stack..."
                         docker compose -f docker-compose.elk.yml up -d --remove-orphans
@@ -276,6 +280,10 @@ pipeline {
                         echo "Cleaning up AIOps resources..."
                         docker rm -f si_releves_aiops_analyzer si_releves_aiops_dashboard 2>/dev/null || true
                         sleep 2
+
+                        # Ensure network exists
+                        echo "🌐 Verifying shared network exists..."
+                        docker network create si-releves-staging_elk_network 2>/dev/null || echo "Network already exists"
 
                         # Start AIOps stack
                         echo "Starting AIOps Stack..."

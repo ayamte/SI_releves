@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🤖 AIOps Dashboard - SI Relevés</title>
+    <title> AIOps Dashboard - SI Relevés</title>
     <style>
         * {
             margin: 0;
@@ -209,8 +209,8 @@
 <body>
     <div class="container">
         <header>
-            <h1>🤖 AIOps Dashboard - SI Relevés</h1>
-            <p class="tagline">"From reactive to proactive" - L'IA analyse les logs et détecte des anomalies</p>
+            <h1> AIOps Dashboard - SI Relevés</h1>
+            <p class="tagline">L'IA analyse les logs et détecte des anomalies</p>
         </header>
 
         <div class="stats-grid">
@@ -232,7 +232,7 @@
         </div>
 
         <div class="section">
-            <h2 class="section-title">⚠️ Anomalies Détectées</h2>
+            <h2 class="section-title"> Anomalies Détectées</h2>
             <% if (anomalies && anomalies.length > 0) { %>
                 <% anomalies.slice(-10).reverse().forEach(anomaly => { %>
                     <div class="anomaly-card <%= anomaly.severity.toLowerCase() %>">
@@ -249,7 +249,7 @@
                             <p><strong>Occurrences:</strong> <%= anomaly.count %>x</p>
                         <% } %>
                         <% if (anomaly.recommendation) { %>
-                            <p><strong>💡 Recommandation:</strong> <%= anomaly.recommendation %></p>
+                            <p><strong> Recommandation:</strong> <%= anomaly.recommendation %></p>
                         <% } %>
                         <p style="color: #999; font-size: 12px; margin-top: 10px;">
                             Détecté le: <%= new Date(anomaly.detected_at).toLocaleString('fr-FR') %>
@@ -258,13 +258,13 @@
                 <% }); %>
             <% } else { %>
                 <div class="no-data">
-                    ✅ Aucune anomalie détectée - Système en bonne santé
+                     Aucune anomalie détectée - Système en bonne santé
                 </div>
             <% } %>
         </div>
 
         <div class="section">
-            <h2 class="section-title">💡 Recommandations IA</h2>
+            <h2 class="section-title"> Recommandations IA</h2>
             <% if (recommendations && recommendations.length > 0) { %>
                 <% recommendations.forEach(rec => { %>
                     <div class="recommendation-card">
@@ -281,14 +281,14 @@
                 <% }); %>
             <% } else { %>
                 <div class="no-data">
-                    ℹ️ Aucune recommandation pour le moment
+                    ℹ Aucune recommandation pour le moment
                 </div>
             <% } %>
         </div>
 
         <% if (stats.top_errors && stats.top_errors.length > 0) { %>
         <div class="section">
-            <h2 class="section-title">📊 Top 5 Erreurs Fréquentes</h2>
+            <h2 class="section-title"> Top 5 Erreurs Fréquentes</h2>
             <% stats.top_errors.forEach((error, index) => { %>
                 <div style="background: #f8f9fa; padding: 15px; margin-bottom: 10px; border-radius: 5px;">
                     <strong>#<%= index + 1 %></strong>
@@ -318,7 +318,7 @@
                 const response = await fetch('/api/analyze', { method: 'POST' });
                 const data = await response.json();
 
-                alert(`✅ Analyse terminée!\\n\\nLogs analysés: ${data.analyzed_logs || 0}\\nAnomalies: ${data.anomalies_detected || 0}\\nRecommandations: ${data.recommendations || 0}`);
+                alert(` Analyse terminée!\\n\\nLogs analysés: ${data.analyzed_logs || 0}\\nAnomalies: ${data.anomalies_detected || 0}\\nRecommandations: ${data.recommendations || 0}`);
 
                 // Rafraîchir la page
                 setTimeout(() => location.reload(), 1000);

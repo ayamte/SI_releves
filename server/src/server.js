@@ -44,6 +44,10 @@ import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
 import compteurRoutes from './routes/compteur.routes.js';
 import releveRoutes from './routes/releve.routes.js';
+import debugRoutes from './routes/debug.js';
+
+app.use('/api/debug', debugRoutes);
+
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);

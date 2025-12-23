@@ -112,8 +112,7 @@ volumes:
     driver: local
   nginx_cache:
     driver: local
-networks:  
-  elk_network:  
-    driver: bridge  
-  si_releves_staging_network:  
+
+networks:
+  si_releves_staging_network:
     driver: bridge
