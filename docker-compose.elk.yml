@@ -89,10 +89,6 @@ services:
 volumes:
   elasticsearch_data:
     driver: local
-  filebeat_data:
-    driver: local
-  metricbeat_data:
-    driver: local
 
     
 networks:

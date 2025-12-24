@@ -1,0 +1,204 @@
+pipeline {
+    agent any
+
+    environment {
+        ELASTICSEARCH_URL = 'http://localhost:9200'
+        KIBANA_URL = 'http://localhost:5601'
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '5'))
+        timeout(time: 20, unit: 'MINUTES')
+        timestamps()
+    }
+
+    stages {
+        stage('🌐 Setup Network') {
+            steps {
+                script {
+                    echo "Creating shared network for monitoring infrastructure..."
+                    sh '''
+                        # Create shared network
+                        docker network create si-releves-staging_elk_network 2>/dev/null || echo "Network already exists"
+
+                        # Verify network
+                        docker network inspect si-releves-staging_elk_network
+                    '''
+                }
+            }
+        }
+
+        stage('📊 Deploy ELK Stack') {
+            steps {
+                script {
+                    echo "Deploying ELK Stack (Elasticsearch, Logstash, Kibana)..."
+
+                    sh '''
+                        # Clean up ELK resources if needed
+                        echo "Cleaning up old ELK resources..."
+                        docker compose -f docker-compose.elk.yml down || true
+
+                        # Start ELK stack
+                        echo "Starting ELK Stack..."
+                        docker compose -f docker-compose.elk.yml up -d --remove-orphans
+
+                        # Wait for Elasticsearch
+                        echo "Waiting for Elasticsearch..."
+                        for i in {1..30}; do
+                            if curl -f ${ELASTICSEARCH_URL}/_cluster/health 2>/dev/null; then
+                                echo "✅ Elasticsearch is ready"
+                                break
+                            fi
+                            echo "Waiting... ($i/30)"
+                            sleep 5
+                        done
+
+                        # Wait for Kibana
+                        echo "Waiting for Kibana..."
+                        for i in {1..30}; do
+                            if curl -f ${KIBANA_URL}/api/status 2>/dev/null; then
+                                echo "✅ Kibana is ready"
+                                break
+                            fi
+                            echo "Waiting... ($i/30)"
+                            sleep 5
+                        done
+
+                        echo "✅ ELK Stack deployed successfully"
+                    '''
+                }
+            }
+        }
+
+        stage('🤖 Deploy AIOps Stack') {
+            steps {
+                script {
+                    echo "Deploying AIOps Stack (Analyzer + Dashboard)..."
+
+                    sh '''
+                        # Clean up AIOps resources if needed
+                        echo "Cleaning up old AIOps resources..."
+                        docker rm -f si_releves_aiops_analyzer si_releves_aiops_dashboard 2>/dev/null || true
+
+                        # Start AIOps stack
+                        echo "Starting AIOps Stack..."
+                        docker compose -f docker-compose.aiops.yml up -d --remove-orphans
+
+                        # Wait for AIOps Analyzer
+                        echo "Waiting for AIOps Analyzer..."
+                        for i in {1..30}; do
+                            if curl -f http://localhost:5005/health 2>/dev/null; then
+                                echo "✅ AIOps Analyzer is ready"
+                                break
+                            fi
+                            echo "Waiting... ($i/30)"
+                            sleep 5
+                        done
+
+                        # Wait for AIOps Dashboard
+                        echo "Waiting for AIOps Dashboard..."
+                        for i in {1..30}; do
+                            if curl -f http://localhost:8082/health 2>/dev/null; then
+                                echo "✅ AIOps Dashboard is ready"
+                                break
+                            fi
+                            echo "Waiting... ($i/30)"
+                            sleep 5
+                        done
+
+                        echo "✅ AIOps Stack deployed successfully"
+                    '''
+                }
+            }
+        }
+
+        stage('⚙️ Configure Monitoring') {
+            steps {
+                script {
+                    echo "Configuring monitoring dashboards..."
+
+                    sh '''
+                        # Wait for Kibana to be fully ready
+                        sleep 10
+
+                        # Create index patterns
+                        curl -X POST "${KIBANA_URL}/api/saved_objects/index-pattern/logs-*" \
+                            -H "kbn-xsrf: true" \
+                            -H "Content-Type: application/json" \
+                            -d '{
+                                "attributes": {
+                                    "title": "logs-*",
+                                    "timeFieldName": "@timestamp"
+                                }
+                            }' || echo "Index pattern might already exist"
+
+                        curl -X POST "${KIBANA_URL}/api/saved_objects/index-pattern/si-releves-*" \
+                            -H "kbn-xsrf: true" \
+                            -H "Content-Type: application/json" \
+                            -d '{
+                                "attributes": {
+                                    "title": "si-releves-*",
+                                    "timeFieldName": "@timestamp"
+                                }
+                            }' || echo "Application index pattern might already exist"
+
+                        echo "✅ Monitoring configured"
+                    '''
+                }
+            }
+        }
+
+        stage('✅ Health Check Infrastructure') {
+            steps {
+                script {
+                    echo "Running infrastructure health checks..."
+
+                    sh '''
+                        echo "==================================="
+                        echo "INFRASTRUCTURE HEALTH CHECK"
+                        echo "==================================="
+
+                        # ELK Status
+                        echo ""
+                        echo "ELK Stack:"
+                        docker compose -f docker-compose.elk.yml ps
+
+                        echo ""
+                        echo "AIOps Stack:"
+                        docker compose -f docker-compose.aiops.yml ps
+
+                        echo ""
+                        echo "Network:"
+                        docker network inspect si-releves-staging_elk_network | grep -A5 "Containers"
+
+                        echo ""
+                        echo "==================================="
+                        echo "INFRASTRUCTURE URLS"
+                        echo "==================================="
+                        echo "Elasticsearch: ${ELASTICSEARCH_URL}"
+                        echo "Kibana: ${KIBANA_URL}"
+                        echo "AIOps Dashboard: http://localhost:8082"
+                        echo "AIOps API: http://localhost:5005"
+                        echo "==================================="
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Infrastructure deployment completed successfully!"
+            echo ""
+            echo "Services available:"
+            echo "- Kibana: http://localhost:5601"
+            echo "- AIOps Dashboard: http://localhost:8082"
+            echo "- Elasticsearch: http://localhost:9200"
+        }
+
+        failure {
+            echo "❌ Infrastructure deployment failed!"
+            echo "Check the logs above for details."
+        }
+    }
+}
