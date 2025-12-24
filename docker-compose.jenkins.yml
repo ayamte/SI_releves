@@ -24,6 +24,7 @@ services:
       - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
     networks:
       - jenkins_network
+      - si-releves-infra-network
     logging:
       driver: "json-file"
       options:
@@ -37,3 +38,5 @@ volumes:
 networks:
   jenkins_network:
     driver: bridge
+  si-releves-infra-network:
+    external: true
