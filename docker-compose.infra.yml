@@ -203,5 +203,5 @@ volumes:
 
 networks:
   infra_network:
+    external: true
     name: si-releves-infra-network
-    driver: bridge
