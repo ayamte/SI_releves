@@ -92,17 +92,16 @@ pipeline {
         }
 
         stage('📊 SonarQube Analysis') {
-            tools {
-                // Use SonarQube Scanner configured in Global Tool Configuration
-                'org.sonarsource.scanner.cli.ScannerCli' 'sonarqube-scanner'
-            }
             steps {
-                withSonarQubeEnv('sonarqube-server') {
-                    sh '''
-                        sonar-scanner \
-                            -Dsonar.projectKey=si-releves \
-                            -Dsonar.sources=.
-                    '''
+                script {
+                    def scannerHome = tool 'SonarQube Scanner'
+                    withSonarQubeEnv('sonarqube-server') {
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                                -Dsonar.projectKey=si-releves \
+                                -Dsonar.sources=.
+                        """
+                    }
                 }
             }
         }
