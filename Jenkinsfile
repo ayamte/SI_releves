@@ -93,15 +93,12 @@ pipeline {
 
         stage('📊 SonarQube Analysis') {
             steps {
-                script {
-                    def scannerHome = tool 'SonarQube Scanner'
-                    withSonarQubeEnv('sonarqube-server') {
-                        sh """
-                            ${scannerHome}/bin/sonar-scanner \
-                                -Dsonar.projectKey=si-releves \
-                                -Dsonar.sources=.
-                        """
-                    }
+                withSonarQubeEnv('sonarqube-server') {
+                    sh '''
+                        sonar-scanner \
+                            -Dsonar.projectKey=si-releves \
+                            -Dsonar.sources=.
+                    '''
                 }
             }
         }
