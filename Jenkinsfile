@@ -97,7 +97,8 @@ pipeline {
                     sh '''
                         sonar-scanner \
                             -Dsonar.projectKey=si-releves \
-                            -Dsonar.sources=.
+                            -Dsonar.sources=server,client \
+                            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.spec.js
                     '''
                 }
             }
