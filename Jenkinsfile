@@ -93,18 +93,17 @@ pipeline {
         }
 
         stage(' SonarQube Analysis') {
-            environment {
-                SONAR_TOKEN = credentials('sonarqube-token')
-            }
             steps {
-                sh """
-                    sonar-scanner \
-                        -Dsonar.projectKey=si-releves \
-                        -Dsonar.sources=server,client \
-                        -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/** \
-                        -Dsonar.host.url=http://sonarqube:9000 \
-                        -Dsonar.token=\$SONAR_TOKEN
-                """
+                withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
+                    sh """
+                        sonar-scanner \
+                            -Dsonar.projectKey=si-releves \
+                            -Dsonar.sources=server,client \
+                            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/** \
+                            -Dsonar.host.url=http://sonarqube:9000 \
+                            -Dsonar.token=\$SONAR_TOKEN
+                    """
+                }
             }
         }
 
