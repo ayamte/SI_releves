@@ -48,6 +48,13 @@ RUN jenkins-plugin-cli --plugins \
 # Create docker group and add jenkins user to it
 RUN groupadd -f docker && usermod -aG docker jenkins
 
+# Install SonarScanner
+RUN curl -sSLo /tmp/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip && \
+    unzip /tmp/sonar-scanner.zip -d /opt && \
+    mv /opt/sonar-scanner-* /opt/sonar-scanner && \
+    ln -s /opt/sonar-scanner/bin/sonar-scanner /usr/local/bin/sonar-scanner && \
+    rm /tmp/sonar-scanner.zip
+
 USER jenkins
 
 # Skip initial setup wizard

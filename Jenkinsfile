@@ -43,7 +43,7 @@ pipeline {
             }
         }
 
-        stage('📦 Install Dependencies') {
+        stage(' Install Dependencies') {
             parallel {
                 stage('Backend') {
                     steps {
@@ -63,7 +63,7 @@ pipeline {
             }
         }
 
-        stage('🧪 Run Tests') {
+        stage(' Run Tests') {
             parallel {
                 stage('Backend Tests') {
                     steps {
@@ -92,20 +92,21 @@ pipeline {
             }
         }
 
-        stage('📊 SonarQube Analysis') {
+        stage(' SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonarqube-server') {
                     sh '''
                         sonar-scanner \
                             -Dsonar.projectKey=si-releves \
                             -Dsonar.sources=server,client \
-                            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**
+                            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/** \
+                            -Dsonar.host.url=http://sonarqube:9000
                     '''
                 }
             }
         }
 
-        stage('🔨 Build Docker Images') {
+        stage(' Build Docker Images') {
             steps {
                 sh '''
                     # Stop and clean
@@ -115,13 +116,13 @@ pipeline {
                     # Build images with staging profile (no code volumes = production-like)
                     docker compose -f ${COMPOSE_FILE} --profile ${COMPOSE_PROFILES} build --no-cache
 
-                    echo "✅ Images built"
+                    echo " Images built"
                     docker images | grep si-releves
                 '''
             }
         }
 
-        stage('🔒 Security Scan') {
+        stage(' Security Scan') {
             when {
                 expression {
                     return sh(script: 'command -v trivy', returnStatus: true) == 0
@@ -137,12 +138,12 @@ pipeline {
                         --no-progress \
                         si-releves-staging-frontend:latest || true
 
-                    echo "✅ Security scan completed"
+                    echo " Security scan completed"
                 '''
             }
         }
 
-        stage('🚀 Deploy Application') {
+        stage(' Deploy Application') {
             steps {
                 sh '''
                     # Deploy application ONLY (not infrastructure)
@@ -155,12 +156,12 @@ pipeline {
                     # Check status
                     docker compose -f ${COMPOSE_FILE} --profile ${COMPOSE_PROFILES} ps
 
-                    echo "✅ Application deployed"
+                    echo " Application deployed"
                 '''
             }
         }
 
-        stage('✅ Health Check') {
+        stage(' Health Check') {
             steps {
                 sh '''
                     echo "Checking application health..."
@@ -168,7 +169,7 @@ pipeline {
                     docker inspect si_releves_frontend_staging --format='{{.State.Status}}'
                     docker inspect si_releves_mysql_staging --format='{{.State.Health.Status}}'
 
-                    echo "✅ Health checks passed"
+                    echo " Health checks passed"
                 '''
             }
         }
@@ -182,7 +183,7 @@ pipeline {
         }
 
         success {
-            echo "✅ Application deployment successful!"
+            echo " Application deployment successful!"
             echo ""
             echo "Application URLs:"
             echo "- Frontend: http://localhost:3000"
@@ -194,7 +195,7 @@ pipeline {
         }
 
         failure {
-            echo "❌ Application deployment failed!"
+            echo " Application deployment failed!"
         }
     }
 }

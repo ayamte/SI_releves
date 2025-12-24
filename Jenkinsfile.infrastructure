@@ -29,30 +29,30 @@ pipeline {
             }
         }
 
-        stage('🌐 Prepare Network') {
+        stage(' Prepare Network') {
             steps {
                 sh '''
                     # Create network if not exists
                     docker network inspect ${INFRA_NETWORK} >/dev/null 2>&1 || \
                     docker network create ${INFRA_NETWORK}
 
-                    echo "✅ Network ready: ${INFRA_NETWORK}"
+                    echo " Network ready: ${INFRA_NETWORK}"
                 '''
             }
         }
 
-        stage('🗑️  Cleanup Old Infrastructure') {
+        stage('  Cleanup Old Infrastructure') {
             steps {
                 sh '''
                     echo "Stopping old infrastructure containers..."
                     docker compose -f ${COMPOSE_FILE} down || true
 
-                    echo "✅ Cleanup completed"
+                    echo " Cleanup completed"
                 '''
             }
         }
 
-        stage('🔍 Deploy ELK Stack') {
+        stage(' Deploy ELK Stack') {
             steps {
                 sh '''
                     echo "Deploying Elasticsearch, Logstash, Kibana..."
@@ -64,7 +64,7 @@ pipeline {
                     elapsed=0
                     while [ $elapsed -lt $timeout ]; do
                         if docker inspect si_releves_elasticsearch --format='{{.State.Health.Status}}' 2>/dev/null | grep -q "healthy"; then
-                            echo "✅ Elasticsearch is healthy"
+                            echo " Elasticsearch is healthy"
                             break
                         fi
                         echo "Waiting for Elasticsearch... ($elapsed/$timeout seconds)"
@@ -72,12 +72,12 @@ pipeline {
                         elapsed=$((elapsed + 5))
                     done
 
-                    echo "✅ ELK Stack deployed"
+                    echo " ELK Stack deployed"
                 '''
             }
         }
 
-        stage('🤖 Deploy AIOps') {
+        stage(' Deploy AIOps') {
             steps {
                 sh '''
                     echo "Deploying AIOps Analyzer and Dashboard..."
@@ -86,12 +86,12 @@ pipeline {
 
                     sleep 10
 
-                    echo "✅ AIOps deployed"
+                    echo " AIOps deployed"
                 '''
             }
         }
 
-        stage('📊 Deploy SonarQube') {
+        stage(' Deploy SonarQube') {
     steps {
         sh '''
             echo "Cleaning existing SonarQube containers (if any)..."
@@ -105,7 +105,7 @@ pipeline {
             elapsed=0
             while [ $elapsed -lt $timeout ]; do
                 if curl -sf http://localhost:9000/api/system/status | grep -q "UP"; then
-                    echo "✅ SonarQube is ready"
+                    echo " SonarQube is ready"
                     break
                 fi
                 echo "Waiting for SonarQube... ($elapsed/$timeout seconds)"
@@ -116,7 +116,7 @@ pipeline {
     }
 }
 
-        stage('✅ Health Checks') {
+        stage(' Health Checks') {
             steps {
                 sh '''
                     echo "========================================="
@@ -152,19 +152,19 @@ pipeline {
                     docker inspect si_releves_sonarqube_db --format='  Status: {{.State.Status}}'
 
                     echo "========================================="
-                    echo "✅ All infrastructure services are running"
+                    echo " All infrastructure services are running"
                 '''
             }
         }
 
-        stage('🔗 Connect Jenkins to Infrastructure') {
+        stage(' Connect Jenkins to Infrastructure') {
             steps {
                 sh '''
                     # Connect Jenkins to infrastructure network if not already connected
                     docker network connect ${INFRA_NETWORK} jenkins_ci 2>/dev/null || \
                     echo "Jenkins already connected to ${INFRA_NETWORK}"
 
-                    echo "✅ Jenkins connected to infrastructure network"
+                    echo " Jenkins connected to infrastructure network"
                 '''
             }
         }
@@ -181,7 +181,7 @@ pipeline {
         }
 
         success {
-            echo "✅ Infrastructure deployment successful!"
+            echo " Infrastructure deployment successful!"
             echo ""
             echo "Infrastructure URLs:"
             echo "- Elasticsearch: http://localhost:9200"
@@ -193,7 +193,7 @@ pipeline {
         }
 
         failure {
-            echo "❌ Infrastructure deployment failed!"
+            echo " Infrastructure deployment failed!"
             echo "Check logs with: docker compose -f ${COMPOSE_FILE} logs"
         }
     }
