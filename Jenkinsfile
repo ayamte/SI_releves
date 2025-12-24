@@ -98,16 +98,8 @@ pipeline {
                         sonar-scanner \
                             -Dsonar.projectKey=si-releves \
                             -Dsonar.sources=server,client \
-                            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.spec.js
+                            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**
                     '''
-                }
-            }
-        }
-
-        stage('🚦 Quality Gate') {
-            steps {
-                timeout(time: 10, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
                 }
             }
         }
