@@ -112,13 +112,7 @@ pipeline {
                     docker compose -f ${COMPOSE_FILE} --profile ${COMPOSE_PROFILES} down || true
                     docker rm -f si_releves_frontend_staging si_releves_backend_staging si_releves_mysql_staging 2>/dev/null || true
 
-                    # Build images with staging profile
-                    BACKEND_DOCKERFILE=Dockerfile.staging \
-                    FRONTEND_DOCKERFILE=Dockerfile.staging \
-                    MYSQL_PORT=3308 \
-                    BACKEND_PORT=5002 \
-                    FRONTEND_PORT=3000 \
-                    FRONTEND_INTERNAL_PORT=80 \
+                    # Build images with staging profile (no code volumes = production-like)
                     docker compose -f ${COMPOSE_FILE} --profile ${COMPOSE_PROFILES} build --no-cache
 
                     echo "✅ Images built"
@@ -152,12 +146,7 @@ pipeline {
             steps {
                 sh '''
                     # Deploy application ONLY (not infrastructure)
-                    BACKEND_DOCKERFILE=Dockerfile.staging \
-                    FRONTEND_DOCKERFILE=Dockerfile.staging \
-                    MYSQL_PORT=3308 \
-                    BACKEND_PORT=5002 \
-                    FRONTEND_PORT=3000 \
-                    FRONTEND_INTERNAL_PORT=80 \
+                    # Staging profile: no code volumes mounted (production-like deployment)
                     docker compose -f ${COMPOSE_FILE} --profile ${COMPOSE_PROFILES} up -d --remove-orphans
 
                     # Wait for services
