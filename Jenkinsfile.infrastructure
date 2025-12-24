@@ -92,29 +92,29 @@ pipeline {
         }
 
         stage('📊 Deploy SonarQube') {
-            steps {
-                sh '''
-                    echo "Deploying SonarQube and PostgreSQL..."
+    steps {
+        sh '''
+            echo "Cleaning existing SonarQube containers (if any)..."
+            docker rm -f si_releves_sonarqube si_releves_sonarqube_db 2>/dev/null || true
 
-                    docker compose -f ${COMPOSE_FILE} up -d sonarqube-db sonarqube
+            echo "Deploying SonarQube and PostgreSQL..."
+            docker compose -f ${COMPOSE_FILE} up -d sonarqube-db sonarqube
 
-                    echo "Waiting for SonarQube to be ready..."
-                    timeout=180
-                    elapsed=0
-                    while [ $elapsed -lt $timeout ]; do
-                        if curl -sf http://localhost:9000/api/system/status | grep -q "UP"; then
-                            echo "✅ SonarQube is ready"
-                            break
-                        fi
-                        echo "Waiting for SonarQube... ($elapsed/$timeout seconds)"
-                        sleep 10
-                        elapsed=$((elapsed + 10))
-                    done
-
-                    echo "✅ SonarQube deployed"
-                '''
-            }
-        }
+            echo "Waiting for SonarQube to be ready..."
+            timeout=180
+            elapsed=0
+            while [ $elapsed -lt $timeout ]; do
+                if curl -sf http://localhost:9000/api/system/status | grep -q "UP"; then
+                    echo "✅ SonarQube is ready"
+                    break
+                fi
+                echo "Waiting for SonarQube... ($elapsed/$timeout seconds)"
+                sleep 10
+                elapsed=$((elapsed + 10))
+            done
+        '''
+    }
+}
 
         stage('✅ Health Checks') {
             steps {
