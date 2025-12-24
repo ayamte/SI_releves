@@ -2,203 +2,199 @@ pipeline {
     agent any
 
     environment {
-        ELASTICSEARCH_URL = 'http://localhost:9200'
-        KIBANA_URL = 'http://localhost:5601'
+        COMPOSE_FILE = 'docker-compose.infra.yml'
+        INFRA_NETWORK = 'si-releves-infra-network'
     }
 
     options {
         buildDiscarder(logRotator(numToKeepStr: '5'))
+        disableConcurrentBuilds()
         timeout(time: 20, unit: 'MINUTES')
         timestamps()
     }
 
     stages {
-        stage('🌐 Setup Network') {
+        stage('📥 Checkout') {
             steps {
-                script {
-                    echo "Creating shared network for monitoring infrastructure..."
-                    sh '''
-                        # Create shared network
-                        docker network create si-releves-staging_elk_network 2>/dev/null || echo "Network already exists"
+                echo "Checking out infrastructure code..."
+                checkout scm
 
-                        # Verify network
-                        docker network inspect si-releves-staging_elk_network
-                    '''
-                }
+                sh '''
+                    echo "========================================="
+                    echo "Infrastructure Deployment"
+                    echo "Git Commit: ${GIT_COMMIT}"
+                    echo "Git Branch: ${GIT_BRANCH}"
+                    echo "========================================="
+                '''
             }
         }
 
-        stage('📊 Deploy ELK Stack') {
+        stage('🌐 Prepare Network') {
             steps {
-                script {
-                    echo "Deploying ELK Stack (Elasticsearch, Logstash, Kibana)..."
+                sh '''
+                    # Create network if not exists
+                    docker network inspect ${INFRA_NETWORK} >/dev/null 2>&1 || \
+                    docker network create ${INFRA_NETWORK}
 
-                    sh '''
-                        # Clean up ELK resources if needed
-                        echo "Cleaning up old ELK resources..."
-                        docker compose -f docker-compose.elk.yml down || true
-
-                        # Start ELK stack
-                        echo "Starting ELK Stack..."
-                        docker compose -f docker-compose.elk.yml up -d --remove-orphans
-
-                        # Wait for Elasticsearch
-                        echo "Waiting for Elasticsearch..."
-                        for i in {1..30}; do
-                            if curl -f ${ELASTICSEARCH_URL}/_cluster/health 2>/dev/null; then
-                                echo "✅ Elasticsearch is ready"
-                                break
-                            fi
-                            echo "Waiting... ($i/30)"
-                            sleep 5
-                        done
-
-                        # Wait for Kibana
-                        echo "Waiting for Kibana..."
-                        for i in {1..30}; do
-                            if curl -f ${KIBANA_URL}/api/status 2>/dev/null; then
-                                echo "✅ Kibana is ready"
-                                break
-                            fi
-                            echo "Waiting... ($i/30)"
-                            sleep 5
-                        done
-
-                        echo "✅ ELK Stack deployed successfully"
-                    '''
-                }
+                    echo "✅ Network ready: ${INFRA_NETWORK}"
+                '''
             }
         }
 
-        stage('🤖 Deploy AIOps Stack') {
+        stage('🗑️  Cleanup Old Infrastructure') {
             steps {
-                script {
-                    echo "Deploying AIOps Stack (Analyzer + Dashboard)..."
+                sh '''
+                    echo "Stopping old infrastructure containers..."
+                    docker compose -f ${COMPOSE_FILE} down || true
 
-                    sh '''
-                        # Clean up AIOps resources if needed
-                        echo "Cleaning up old AIOps resources..."
-                        docker rm -f si_releves_aiops_analyzer si_releves_aiops_dashboard 2>/dev/null || true
-
-                        # Start AIOps stack
-                        echo "Starting AIOps Stack..."
-                        docker compose -f docker-compose.aiops.yml up -d --remove-orphans
-
-                        # Wait for AIOps Analyzer
-                        echo "Waiting for AIOps Analyzer..."
-                        for i in {1..30}; do
-                            if curl -f http://localhost:5005/health 2>/dev/null; then
-                                echo "✅ AIOps Analyzer is ready"
-                                break
-                            fi
-                            echo "Waiting... ($i/30)"
-                            sleep 5
-                        done
-
-                        # Wait for AIOps Dashboard
-                        echo "Waiting for AIOps Dashboard..."
-                        for i in {1..30}; do
-                            if curl -f http://localhost:8082/health 2>/dev/null; then
-                                echo "✅ AIOps Dashboard is ready"
-                                break
-                            fi
-                            echo "Waiting... ($i/30)"
-                            sleep 5
-                        done
-
-                        echo "✅ AIOps Stack deployed successfully"
-                    '''
-                }
+                    echo "✅ Cleanup completed"
+                '''
             }
         }
 
-        stage('⚙️ Configure Monitoring') {
+        stage('🔍 Deploy ELK Stack') {
             steps {
-                script {
-                    echo "Configuring monitoring dashboards..."
+                sh '''
+                    echo "Deploying Elasticsearch, Logstash, Kibana..."
 
-                    sh '''
-                        # Wait for Kibana to be fully ready
+                    docker compose -f ${COMPOSE_FILE} up -d elasticsearch logstash kibana
+
+                    echo "Waiting for Elasticsearch to be healthy..."
+                    timeout=120
+                    elapsed=0
+                    while [ $elapsed -lt $timeout ]; do
+                        if docker inspect si_releves_elasticsearch --format='{{.State.Health.Status}}' 2>/dev/null | grep -q "healthy"; then
+                            echo "✅ Elasticsearch is healthy"
+                            break
+                        fi
+                        echo "Waiting for Elasticsearch... ($elapsed/$timeout seconds)"
+                        sleep 5
+                        elapsed=$((elapsed + 5))
+                    done
+
+                    echo "✅ ELK Stack deployed"
+                '''
+            }
+        }
+
+        stage('🤖 Deploy AIOps') {
+            steps {
+                sh '''
+                    echo "Deploying AIOps Analyzer and Dashboard..."
+
+                    docker compose -f ${COMPOSE_FILE} up -d aiops-analyzer aiops-dashboard
+
+                    sleep 10
+
+                    echo "✅ AIOps deployed"
+                '''
+            }
+        }
+
+        stage('📊 Deploy SonarQube') {
+            steps {
+                sh '''
+                    echo "Deploying SonarQube and PostgreSQL..."
+
+                    docker compose -f ${COMPOSE_FILE} up -d sonarqube-db sonarqube
+
+                    echo "Waiting for SonarQube to be ready..."
+                    timeout=180
+                    elapsed=0
+                    while [ $elapsed -lt $timeout ]; do
+                        if curl -sf http://localhost:9000/api/system/status | grep -q "UP"; then
+                            echo "✅ SonarQube is ready"
+                            break
+                        fi
+                        echo "Waiting for SonarQube... ($elapsed/$timeout seconds)"
                         sleep 10
+                        elapsed=$((elapsed + 10))
+                    done
 
-                        # Create index patterns
-                        curl -X POST "${KIBANA_URL}/api/saved_objects/index-pattern/logs-*" \
-                            -H "kbn-xsrf: true" \
-                            -H "Content-Type: application/json" \
-                            -d '{
-                                "attributes": {
-                                    "title": "logs-*",
-                                    "timeFieldName": "@timestamp"
-                                }
-                            }' || echo "Index pattern might already exist"
-
-                        curl -X POST "${KIBANA_URL}/api/saved_objects/index-pattern/si-releves-*" \
-                            -H "kbn-xsrf: true" \
-                            -H "Content-Type: application/json" \
-                            -d '{
-                                "attributes": {
-                                    "title": "si-releves-*",
-                                    "timeFieldName": "@timestamp"
-                                }
-                            }' || echo "Application index pattern might already exist"
-
-                        echo "✅ Monitoring configured"
-                    '''
-                }
+                    echo "✅ SonarQube deployed"
+                '''
             }
         }
 
-        stage('✅ Health Check Infrastructure') {
+        stage('✅ Health Checks') {
             steps {
-                script {
-                    echo "Running infrastructure health checks..."
+                sh '''
+                    echo "========================================="
+                    echo "Infrastructure Health Check"
+                    echo "========================================="
 
-                    sh '''
-                        echo "==================================="
-                        echo "INFRASTRUCTURE HEALTH CHECK"
-                        echo "==================================="
+                    # Elasticsearch
+                    echo "Elasticsearch:"
+                    docker inspect si_releves_elasticsearch --format='  Status: {{.State.Status}} | Health: {{.State.Health.Status}}'
 
-                        # ELK Status
-                        echo ""
-                        echo "ELK Stack:"
-                        docker compose -f docker-compose.elk.yml ps
+                    # Kibana
+                    echo "Kibana:"
+                    docker inspect si_releves_kibana --format='  Status: {{.State.Status}} | Health: {{.State.Health.Status}}'
 
-                        echo ""
-                        echo "AIOps Stack:"
-                        docker compose -f docker-compose.aiops.yml ps
+                    # Logstash
+                    echo "Logstash:"
+                    docker inspect si_releves_logstash --format='  Status: {{.State.Status}}'
 
-                        echo ""
-                        echo "Network:"
-                        docker network inspect si-releves-staging_elk_network | grep -A5 "Containers"
+                    # AIOps Analyzer
+                    echo "AIOps Analyzer:"
+                    docker inspect si_releves_aiops_analyzer --format='  Status: {{.State.Status}}'
 
-                        echo ""
-                        echo "==================================="
-                        echo "INFRASTRUCTURE URLS"
-                        echo "==================================="
-                        echo "Elasticsearch: ${ELASTICSEARCH_URL}"
-                        echo "Kibana: ${KIBANA_URL}"
-                        echo "AIOps Dashboard: http://localhost:8082"
-                        echo "AIOps API: http://localhost:5005"
-                        echo "==================================="
-                    '''
-                }
+                    # AIOps Dashboard
+                    echo "AIOps Dashboard:"
+                    docker inspect si_releves_aiops_dashboard --format='  Status: {{.State.Status}}'
+
+                    # SonarQube
+                    echo "SonarQube:"
+                    docker inspect si_releves_sonarqube --format='  Status: {{.State.Status}}'
+
+                    # SonarQube DB
+                    echo "SonarQube DB:"
+                    docker inspect si_releves_sonarqube_db --format='  Status: {{.State.Status}}'
+
+                    echo "========================================="
+                    echo "✅ All infrastructure services are running"
+                '''
+            }
+        }
+
+        stage('🔗 Connect Jenkins to Infrastructure') {
+            steps {
+                sh '''
+                    # Connect Jenkins to infrastructure network if not already connected
+                    docker network connect ${INFRA_NETWORK} jenkins_ci 2>/dev/null || \
+                    echo "Jenkins already connected to ${INFRA_NETWORK}"
+
+                    echo "✅ Jenkins connected to infrastructure network"
+                '''
             }
         }
     }
 
     post {
+        always {
+            sh '''
+                echo "========================================="
+                echo "Infrastructure Deployment Summary"
+                echo "========================================="
+                docker compose -f ${COMPOSE_FILE} ps
+            '''
+        }
+
         success {
-            echo "✅ Infrastructure deployment completed successfully!"
+            echo "✅ Infrastructure deployment successful!"
             echo ""
-            echo "Services available:"
+            echo "Infrastructure URLs:"
+            echo "- Elasticsearch: http://localhost:9200"
             echo "- Kibana: http://localhost:5601"
             echo "- AIOps Dashboard: http://localhost:8082"
-            echo "- Elasticsearch: http://localhost:9200"
+            echo "- SonarQube: http://localhost:9000"
+            echo ""
+            echo "Note: Infrastructure services are now ready for application deployment."
         }
 
         failure {
             echo "❌ Infrastructure deployment failed!"
-            echo "Check the logs above for details."
+            echo "Check logs with: docker compose -f ${COMPOSE_FILE} logs"
         }
     }
 }

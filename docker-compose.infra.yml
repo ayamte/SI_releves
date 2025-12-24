@@ -1,0 +1,207 @@
+version: '3.8'
+
+services:
+  # ========================================
+  # ELASTICSEARCH - Stockage et indexation
+  # ========================================
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: si_releves_elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - infra_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ========================================
+  # LOGSTASH - Pipeline de traitement
+  # ========================================
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: si_releves_logstash
+    restart: unless-stopped
+    ports:
+      - "5044:5044"     # Beats input
+      - "9600:9600"     # Monitoring API
+      - "5000:5000/tcp" # TCP input
+      - "5000:5000/udp" # UDP input
+    environment:
+      - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
+      - xpack.monitoring.enabled=true
+      - xpack.monitoring.elasticsearch.hosts=http://elasticsearch:9200
+    volumes:
+      - ./elk/logstash/pipeline:/usr/share/logstash/pipeline
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - infra_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ========================================
+  # KIBANA - Interface de visualisation
+  # ========================================
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: si_releves_kibana
+    restart: unless-stopped
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_NAME=si-releves-kibana
+      - SERVER_HOST=0.0.0.0
+      - MONITORING_UI_CONTAINER_ELASTICSEARCH_ENABLED=true
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - infra_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ========================================
+  # AIOPS ANALYZER - Anomaly Detection
+  # ========================================
+  aiops-analyzer:
+    build:
+      context: ./aiops/analyzer
+      dockerfile: Dockerfile
+    container_name: si_releves_aiops_analyzer
+    restart: unless-stopped
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - infra_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  # ========================================
+  # AIOPS DASHBOARD - Web UI
+  # ========================================
+  aiops-dashboard:
+    build:
+      context: ./aiops/dashboard
+      dockerfile: Dockerfile
+    container_name: si_releves_aiops_dashboard
+    restart: unless-stopped
+    ports:
+      - "8082:8080"
+    environment:
+      - AIOPS_API_URL=http://aiops-analyzer:5000
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    depends_on:
+      - aiops-analyzer
+    networks:
+      - infra_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  # ========================================
+  # SONARQUBE - Code Quality Analysis
+  # ========================================
+  sonarqube:
+    image: sonarqube:10.4-community
+    container_name: si_releves_sonarqube
+    restart: unless-stopped
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+      - SONAR_JDBC_URL=jdbc:postgresql://sonarqube-db:5432/sonar
+      - SONAR_JDBC_USERNAME=sonar
+      - SONAR_JDBC_PASSWORD=sonar
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    depends_on:
+      - sonarqube-db
+    networks:
+      - infra_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ========================================
+  # SONARQUBE DATABASE - PostgreSQL
+  # ========================================
+  sonarqube-db:
+    image: postgres:15-alpine
+    container_name: si_releves_sonarqube_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=sonar
+      - POSTGRES_PASSWORD=sonar
+      - POSTGRES_DB=sonar
+    volumes:
+      - sonarqube_db_data:/var/lib/postgresql/data
+    networks:
+      - infra_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  elasticsearch_data:
+    driver: local
+  sonarqube_data:
+    driver: local
+  sonarqube_extensions:
+    driver: local
+  sonarqube_logs:
+    driver: local
+  sonarqube_db_data:
+    driver: local
+
+networks:
+  infra_network:
+    name: si-releves-infra-network
+    driver: bridge

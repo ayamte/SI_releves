@@ -10,7 +10,8 @@ pipeline {
         VERSION = "${env.BUILD_NUMBER}-${GIT_COMMIT_SHORT}"
 
         // Docker
-        COMPOSE_FILE = 'docker-compose.staging.yml'
+        COMPOSE_FILE = 'docker-compose.app.yml'
+        COMPOSE_PROFILES = 'staging'
     }
 
     options {
@@ -108,14 +109,20 @@ pipeline {
             steps {
                 sh '''
                     # Stop and clean
-                    docker compose -f ${COMPOSE_FILE} down || true
+                    docker compose -f ${COMPOSE_FILE} --profile ${COMPOSE_PROFILES} down || true
                     docker rm -f si_releves_frontend_staging si_releves_backend_staging si_releves_mysql_staging 2>/dev/null || true
 
-                    # Build images
-                    docker compose -f ${COMPOSE_FILE} build --no-cache
+                    # Build images with staging profile
+                    BACKEND_DOCKERFILE=Dockerfile.staging \
+                    FRONTEND_DOCKERFILE=Dockerfile.staging \
+                    MYSQL_PORT=3308 \
+                    BACKEND_PORT=5002 \
+                    FRONTEND_PORT=3000 \
+                    FRONTEND_INTERNAL_PORT=80 \
+                    docker compose -f ${COMPOSE_FILE} --profile ${COMPOSE_PROFILES} build --no-cache
 
                     echo "✅ Images built"
-                    docker images | grep si-releves-staging
+                    docker images | grep si-releves
                 '''
             }
         }
@@ -145,13 +152,19 @@ pipeline {
             steps {
                 sh '''
                     # Deploy application ONLY (not infrastructure)
-                    docker compose -f ${COMPOSE_FILE} up -d --remove-orphans
+                    BACKEND_DOCKERFILE=Dockerfile.staging \
+                    FRONTEND_DOCKERFILE=Dockerfile.staging \
+                    MYSQL_PORT=3308 \
+                    BACKEND_PORT=5002 \
+                    FRONTEND_PORT=3000 \
+                    FRONTEND_INTERNAL_PORT=80 \
+                    docker compose -f ${COMPOSE_FILE} --profile ${COMPOSE_PROFILES} up -d --remove-orphans
 
                     # Wait for services
                     sleep 15
 
                     # Check status
-                    docker compose -f ${COMPOSE_FILE} ps
+                    docker compose -f ${COMPOSE_FILE} --profile ${COMPOSE_PROFILES} ps
 
                     echo "✅ Application deployed"
                 '''

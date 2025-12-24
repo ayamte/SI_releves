@@ -1,6 +1,9 @@
 version: '3.8'
 
 services:
+  # ========================================
+  # JENKINS CI/CD Server
+  # ========================================
   jenkins:
     build:
       context: .
@@ -14,33 +17,21 @@ services:
       - "50000:50000"    # Jenkins agent port
     volumes:
       - jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock  # Docker socket (instead of DinD)
       - ./:/workspace
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
       - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
     networks:
       - jenkins_network
-
-  # Docker-in-Docker (DinD) pour exécuter les builds Docker
-  docker:
-    image: docker:dind
-    container_name: jenkins_docker
-    restart: unless-stopped
-    privileged: true
-    environment:
-      - DOCKER_TLS_CERTDIR=/certs
-    volumes:
-      - jenkins_docker_certs:/certs/client
-      - jenkins_home:/var/jenkins_home
-    networks:
-      - jenkins_network
-    command: --storage-driver=overlay2
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   jenkins_home:
-    driver: local
-  jenkins_docker_certs:
     driver: local
 
 networks:
