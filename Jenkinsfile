@@ -92,6 +92,10 @@ pipeline {
         }
 
         stage('📊 SonarQube Analysis') {
+            tools {
+                // Use SonarQube Scanner configured in Global Tool Configuration
+                'org.sonarsource.scanner.cli.ScannerCli' 'sonarqube-scanner'
+            }
             steps {
                 withSonarQubeEnv('sonarqube-server') {
                     sh '''
