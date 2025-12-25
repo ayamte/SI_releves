@@ -27,7 +27,7 @@ pipeline {
     }
 
     stages {
-        stage('📥 Checkout') {
+        stage(' Checkout') {
             steps {
                 echo "Checking out code..."
                 checkout scm
@@ -111,11 +111,11 @@ pipeline {
             steps {
                 sh '''
                     # Stop and clean
-                    docker compose -f ${COMPOSE_FILE} --profile ${COMPOSE_PROFILES} down || true
+                    docker compose -f ${COMPOSE_FILE} --env-file .env.staging --profile ${COMPOSE_PROFILES} down || true
                     docker rm -f si_releves_frontend_staging si_releves_backend_staging si_releves_mysql_staging 2>/dev/null || true
 
                     # Build images with staging profile (no code volumes = production-like)
-                    docker compose -f ${COMPOSE_FILE} --profile ${COMPOSE_PROFILES} build --no-cache
+                    docker compose -f ${COMPOSE_FILE} --env-file .env.staging --profile ${COMPOSE_PROFILES} build --no-cache
 
                     echo " Images built"
                     docker images | grep si-releves
@@ -149,13 +149,13 @@ pipeline {
                 sh '''
                     # Deploy application ONLY (not infrastructure)
                     # Staging profile: no code volumes mounted (production-like deployment)
-                    docker compose -f ${COMPOSE_FILE} --profile ${COMPOSE_PROFILES} up -d --remove-orphans
+                    docker compose -f ${COMPOSE_FILE} --env-file .env.staging --profile ${COMPOSE_PROFILES} up -d --remove-orphans
 
                     # Wait for services
                     sleep 15
 
                     # Check status
-                    docker compose -f ${COMPOSE_FILE} --profile ${COMPOSE_PROFILES} ps
+                    docker compose -f ${COMPOSE_FILE} --env-file .env.staging --profile ${COMPOSE_PROFILES} ps
 
                     echo " Application deployed"
                 '''
