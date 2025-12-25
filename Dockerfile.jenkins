@@ -55,6 +55,9 @@ RUN curl -sSLo /tmp/sonar-scanner.zip https://binaries.sonarsource.com/Distribut
     ln -s /opt/sonar-scanner/bin/sonar-scanner /usr/local/bin/sonar-scanner && \
     rm /tmp/sonar-scanner.zip
 
+# Install Trivy (Security Scanner)
+RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
 USER jenkins
 
 # Skip initial setup wizard

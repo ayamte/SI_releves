@@ -102,6 +102,7 @@ services:
     container_name: si_releves_aiops_analyzer
     restart: unless-stopped
     environment:
+      - ELASTICSEARCH_HOST=elasticsearch:9200
       - ELASTICSEARCH_URL=http://elasticsearch:9200
       - PYTHONUNBUFFERED=1
       - LOG_LEVEL=INFO

@@ -13,7 +13,6 @@ from collections import Counter, defaultdict
 from elasticsearch import Elasticsearch
 from flask import Flask, jsonify
 import numpy as np
-from sklearn.cluster import DBSCAN
 import logging
 
 # Configuration logging
@@ -72,7 +71,7 @@ class AIOpsAnalyzer:
                         "filter": [
                             {
                                 "term": {
-                                    "application.keyword": "si-releves"
+                                    "environment.keyword": "staging"
                                 }
                             }
                         ]
@@ -137,6 +136,9 @@ class AIOpsAnalyzer:
         # Détecter les erreurs répétées (pattern suspect)
         for error_msg, count in error_messages.most_common(10):
             if count >= ALERT_THRESHOLD_ERRORS:
+                # Toujours mettre à jour error_patterns pour les recommandations
+                error_patterns[error_msg] = count
+
                 anomaly = {
                     'type': 'repeated_error',
                     'severity': 'HIGH' if count > 20 else 'MEDIUM',
@@ -147,10 +149,9 @@ class AIOpsAnalyzer:
                     'recommendation': self._get_error_recommendation(error_msg, count)
                 }
 
-                # Vérifier cooldown pour éviter spam
+                # Vérifier cooldown pour éviter spam dans detected_anomalies
                 if not self._is_in_cooldown(error_msg):
                     detected_anomalies.append(anomaly)
-                    error_patterns[error_msg] = count
                     self._set_cooldown(error_msg, minutes=30)
 
                     logger.warning(
@@ -286,7 +287,7 @@ class AIOpsAnalyzer:
             top_errors = sorted(error_patterns.items(), key=lambda x: x[1], reverse=True)[:3]
 
             for error_msg, count in top_errors:
-                if 'database' in error_msg.lower() or 'mysql' in error_msg.lower():
+                if 'database' in error_msg.lower() or 'mysql' in error_msg.lower() or 'access denied' in error_msg.lower():
                     recommendations.append({
                         'priority': 'HIGH',
                         'category': 'Database',
